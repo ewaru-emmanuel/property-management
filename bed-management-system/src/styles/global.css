@@ -1,0 +1,71 @@
+/* Floors Page */
+.floors-page {
+  padding: 0;
+}
+
+.floors-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.floor-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #22c55e;
+}
+
+.floor-card h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.floor-details p {
+  margin: 4px 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.floor-card.empty {
+  border-left-color: #eab308;
+}
+
+.floor-card.partial {
+  border-left-color: #f59e0b;
+}
+
+.floor-card.full {
+  border-left-color: #ef4444;
+}
+
+.floor-card .status-badge {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.floor-card.empty .status-badge {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.floor-card.partial .status-badge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.floor-card.full .status-badge {
+  background: #fee2e2;
+  color: #991b1b;
+}

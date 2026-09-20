@@ -1,0 +1,74 @@
+Phase 1 — Foundation
+Supabase project setup
+
+Database schema (users, buildings, floors, rooms, beds, decks, occupants, payments)
+
+Row Level Security (RLS) — so each user only sees their own data
+
+Phase 2 — Backend (FastAPI)
+Project skeleton (main.py, config, database client)
+
+Auth routes (signup, login, me)
+
+Buildings routes (create with nested floors/rooms/beds/decks, list, update, delete)
+
+Floors / Rooms / Beds / Decks routes (nested CRUD)
+
+Occupants routes (assign to deck, check-in/out)
+
+Payments routes (record, list, update status)
+
+Phase 3 — Connect Frontend
+Axios/fetch service layer
+
+Wire Admin → backend (real save to DB)
+
+Wire Header dropdown → backend (real buildings)
+
+Wire Dashboard, Floors, Rooms, Occupants, Payments → backend
+
+Add auth pages (Login / Signup) and protect routes
+
+Phase 4 — Polish
+Loading skeletons
+
+Error handling & toasts
+
+Form validation
+
+Deployment (backend on Render/Fly, frontend on Vercel, DB on Supabase)
+
+⚠️ Important Decisions Before We Start
+Please confirm these 4 things so I don’t guess:
+
+1. Backend framework
+FastAPI (recommended — modern, async, great with Supabase)
+
+Flask (simpler but older)
+
+Django (heavier, has its own ORM — overkill here)
+
+👉 My pick: FastAPI
+
+2. Authentication
+Supabase Auth (built-in, handles JWT, email, magic links, OAuth) — recommended
+
+Custom JWT with FastAPI
+
+👉 My pick: Supabase Auth — saves weeks of work
+
+3. Database access from backend
+Supabase Python client (supabase-py) — simplest, matches your choice
+
+SQLAlchemy + psycopg — more control, more boilerplate
+
+👉 My pick: supabase-py — clean and aligned with your DB choice
+
+4. Local setup
+Do you already have:
+
+A Supabase account and project created? (Yes / No)
+
+Python 3.10+ installed locally? (Yes / No)
+
+Familiarity with running a Python server (uvicorn)? (Yes / No)

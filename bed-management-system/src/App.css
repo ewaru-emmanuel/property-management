@@ -1,0 +1,260 @@
+/* =========================
+   APP
+========================= */
+
+.app {
+  min-height: 100vh;
+  background: #f5f6fa;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+  height: 70px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 32px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.building-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 14px;
+}
+
+.building-selector select {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+
+  padding: 7px 10px;
+
+  background: white;
+  cursor: pointer;
+}
+
+.admin {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.logout-button {
+  border: none;
+  background: transparent;
+
+  font-size: 22px;
+  cursor: pointer;
+}
+
+
+/* =========================
+   BODY
+========================= */
+
+.app-body {
+  display: flex;
+  min-height: calc(100vh - 70px);
+}
+
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+  width: 180px;
+  background: white;
+
+  border-right: 1px solid #e5e7eb;
+
+  padding: 20px 12px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  padding: 14px 12px;
+
+  border-radius: 8px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  cursor: pointer;
+
+  font-size: 14px;
+  color: #6b7280;
+
+  transition: 0.2s;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.nav-item.active {
+  background: #eaf2ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 20px;
+}
+
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+.main-content {
+  flex: 1;
+
+  padding: 40px;
+
+  overflow-y: auto;
+}
+
+
+/* =========================
+   DASHBOARD
+========================= */
+
+.dashboard {
+  max-width: 1000px;
+}
+
+.page-heading {
+  margin-bottom: 35px;
+}
+
+.page-heading h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.page-heading p {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+
+/* =========================
+   STATISTICS
+========================= */
+
+.stats-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(200px, 1fr));
+
+  gap: 20px;
+
+  max-width: 600px;
+
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  padding: 25px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  transition: 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.stat-card strong {
+  font-size: 32px;
+}
+
+
+/* =========================
+   RECENT ACTIVITY
+========================= */
+
+.activity-section {
+  max-width: 700px;
+}
+
+.activity-section h2 {
+  font-size: 20px;
+  margin-bottom: 18px;
+}
+
+.activity-list {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  overflow: hidden;
+}  
+
+.activity-item {
+  padding: 18px 20px;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+  gap: 8px;
+
+  font-size: 15px;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-item span:first-child {
+  font-weight: 600;
+}
+
+
+
+

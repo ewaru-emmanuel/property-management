@@ -1,0 +1,73 @@
+.bed-card {
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 4px solid #22c55e;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 6px;
+}
+
+.bed-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.bed-card.occupied {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.bed-card.vacant {
+  border-left-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.bed-card.upper {
+  border-left-color: #3b82f6;
+}
+
+.bed-card.middle {
+  border-left-color: #f59e0b;
+}
+
+.bed-card.lower {
+  border-left-color: #8b5cf6;
+}
+
+.bed-position {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.bed-status {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.occupant-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.payment-info {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.balance {
+  display: block;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.vacant-label {
+  color: #22c55e;
+  font-weight: 500;
+}
