@@ -52,7 +52,6 @@ def list_occupants(user_id: str, building_id: str = None):
 
 
 def create_occupant(user_id: str, payload: dict):
-    # Verify building belongs to user
     b = (
         supabase_admin.table("buildings")
         .select("id")
@@ -63,7 +62,6 @@ def create_occupant(user_id: str, payload: dict):
     if not b.data:
         raise Exception("Building not found for this user")
 
-    # Normalize empty values → None (prevents Supabase 400 on UUID columns)
     deck_id = payload.get("deck_id") or None
     phone = payload.get("phone") or None
     email = payload.get("email") or None
@@ -74,30 +72,37 @@ def create_occupant(user_id: str, payload: dict):
     if not full_name:
         raise Exception("Full name is required")
 
-    res = (
-        supabase_admin.table("occupants")
-        .insert({
-            "building_id": payload["building_id"],
-            "deck_id": deck_id,
-            "full_name": full_name,
-            "phone": phone,
-            "email": email,
-            "emergency_contact": emergency_contact,
-            "check_in_date": check_in_date,
-            "status": "Active",
-        })
-        .execute()
-    )
+    # ⭐ TEMP DEBUG — log the exact payload
+    print(f"DEBUG create_occupant payload: {payload}")
+    print(f"DEBUG normalized: deck_id={deck_id}, full_name={full_name}, check_in_date={check_in_date}")
+
+    try:
+        res = (
+            supabase_admin.table("occupants")
+            .insert({
+                "building_id": payload["building_id"],
+                "deck_id": deck_id,
+                "full_name": full_name,
+                "phone": phone,
+                "email": email,
+                "emergency_contact": emergency_contact,
+                "check_in_date": check_in_date,
+                "status": "Active",
+            })
+            .execute()
+        )
+    except Exception as e:
+        # ⭐ Surface the exact Supabase error
+        raise Exception(f"Supabase insert failed: {str(e)}")
+
     occupant = res.data[0]
 
-    # Mark deck as Occupied
     if deck_id:
         supabase_admin.table("decks").update(
             {"status": "Occupied"}
         ).eq("id", deck_id).execute()
 
     return occupant
-
 
 def update_occupant(user_id: str, occupant_id: str, payload: dict):
     # Verify occupant exists and belongs to user's building
