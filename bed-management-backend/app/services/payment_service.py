@@ -5,7 +5,6 @@ def list_payments(user_id: str, building_id: str = None):
     """
     List payments with occupant + location context in ONE query.
     """
-    # Get user's buildings
     bq = supabase_admin.table("buildings").select("id").eq("user_id", user_id)
     if building_id:
         bq = bq.eq("id", building_id)
@@ -14,7 +13,6 @@ def list_payments(user_id: str, building_id: str = None):
     if not building_ids:
         return []
 
-    # One nested query: payment → occupant → deck → bed → room
     res = (
         supabase_admin.table("payments")
         .select("""
@@ -36,13 +34,12 @@ def list_payments(user_id: str, building_id: str = None):
         .execute()
     )
 
-    # Flatten
     result = []
     for p in res.data:
         occ = p.pop("occupants", None) or {}
-        deck = occ.get("decks", {}) if occ else {}
-        bed = deck.get("beds", {}) if deck else {}
-        room = bed.get("rooms", {}) if bed else {}
+        deck = occ.get("decks") or {}
+        bed = deck.get("beds") or {}
+        room = bed.get("rooms") or {}
 
         p["occupant_name"] = occ.get("full_name", "—")
         p["room_name"] = room.get("name", "—")
@@ -55,7 +52,6 @@ def list_payments(user_id: str, building_id: str = None):
 
 
 def create_payment(user_id: str, payload: dict):
-    # Verify occupant belongs to user's building
     o = (
         supabase_admin.table("occupants")
         .select("id, deck_id, building_id")
@@ -75,6 +71,7 @@ def create_payment(user_id: str, payload: dict):
     if not b.data:
         raise Exception("Not authorized")
 
+    # Normalize empty values
     res = (
         supabase_admin.table("payments")
         .insert({
@@ -82,9 +79,9 @@ def create_payment(user_id: str, payload: dict):
             "deck_id": o[0].get("deck_id"),
             "amount_paid": payload.get("amount_paid", 0),
             "balance": payload.get("balance", 0),
-            "due_date": payload.get("due_date"),
+            "due_date": payload.get("due_date") or None,
             "status": payload.get("status", "Pending"),
-            "notes": payload.get("notes"),
+            "notes": payload.get("notes") or None,
         })
         .execute()
     )
@@ -92,7 +89,6 @@ def create_payment(user_id: str, payload: dict):
 
 
 def update_payment(user_id: str, payment_id: str, payload: dict):
-    # Verify payment exists and belongs to user's building
     p = (
         supabase_admin.table("payments")
         .select("id, occupant_id")
@@ -121,7 +117,6 @@ def update_payment(user_id: str, payment_id: str, payload: dict):
     if not building:
         raise Exception("Not authorized")
 
-    # Skip empty values
     update_data = {}
     for field in ["amount_paid", "balance", "due_date", "status", "notes"]:
         value = payload.get(field)

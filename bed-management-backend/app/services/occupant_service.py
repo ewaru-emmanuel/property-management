@@ -2,6 +2,9 @@ from app.database import supabase_admin
 
 
 def list_occupants(user_id: str, building_id: str = None):
+    """
+    List occupants with their full location context in ONE query.
+    """
     bq = supabase_admin.table("buildings").select("id").eq("user_id", user_id)
     if building_id:
         bq = bq.eq("id", building_id)
@@ -47,6 +50,7 @@ def list_occupants(user_id: str, building_id: str = None):
 
     return result
 
+
 def create_occupant(user_id: str, payload: dict):
     # Verify building belongs to user
     b = (
@@ -59,17 +63,27 @@ def create_occupant(user_id: str, payload: dict):
     if not b.data:
         raise Exception("Building not found for this user")
 
-    # Insert occupant
+    # Normalize empty values → None (prevents Supabase 400 on UUID columns)
+    deck_id = payload.get("deck_id") or None
+    phone = payload.get("phone") or None
+    email = payload.get("email") or None
+    emergency_contact = payload.get("emergency_contact") or None
+    check_in_date = payload.get("check_in_date") or None
+    full_name = (payload.get("full_name") or "").strip()
+
+    if not full_name:
+        raise Exception("Full name is required")
+
     res = (
         supabase_admin.table("occupants")
         .insert({
             "building_id": payload["building_id"],
-            "deck_id": payload.get("deck_id"),
-            "full_name": payload["full_name"],
-            "phone": payload.get("phone"),
-            "email": payload.get("email"),
-            "emergency_contact": payload.get("emergency_contact"),
-            "check_in_date": payload.get("check_in_date"),
+            "deck_id": deck_id,
+            "full_name": full_name,
+            "phone": phone,
+            "email": email,
+            "emergency_contact": emergency_contact,
+            "check_in_date": check_in_date,
             "status": "Active",
         })
         .execute()
@@ -77,10 +91,10 @@ def create_occupant(user_id: str, payload: dict):
     occupant = res.data[0]
 
     # Mark deck as Occupied
-    if payload.get("deck_id"):
+    if deck_id:
         supabase_admin.table("decks").update(
             {"status": "Occupied"}
-        ).eq("id", payload["deck_id"]).execute()
+        ).eq("id", deck_id).execute()
 
     return occupant
 
@@ -109,26 +123,29 @@ def update_occupant(user_id: str, occupant_id: str, payload: dict):
     old_deck_id = o[0].get("deck_id")
     new_deck_id = payload.get("deck_id")
 
-    # Build the update dict — only include fields that were actually sent
+    # Build the update dict — skip empty strings
     update_data = {}
     for field in [
-        "full_name", "phone", "email",
-        "emergency_contact", "check_in_date", "status",
+        "full_name",
+        "phone",
+        "email",
+        "emergency_contact",
+        "check_in_date",
+        "status",
     ]:
-        if payload.get(field) is not None:
-            update_data[field] = payload[field]
+        value = payload.get(field)
+        if value is not None and value != "":
+            update_data[field] = value
 
     # Handle deck swap if a new deck is provided and different
     if new_deck_id and new_deck_id != old_deck_id:
         update_data["deck_id"] = new_deck_id
 
-        # Free the old deck
         if old_deck_id:
             supabase_admin.table("decks").update(
                 {"status": "Vacant"}
             ).eq("id", old_deck_id).execute()
 
-        # Occupy the new deck
         supabase_admin.table("decks").update(
             {"status": "Occupied"}
         ).eq("id", new_deck_id).execute()
@@ -146,7 +163,6 @@ def update_occupant(user_id: str, occupant_id: str, payload: dict):
 
 
 def delete_occupant(user_id: str, occupant_id: str):
-    # Verify ownership
     o = (
         supabase_admin.table("occupants")
         .select("id, deck_id, building_id")
@@ -180,7 +196,6 @@ def list_vacant_decks(user_id: str, building_id: str):
     """
     Return all vacant decks in a building with full location context in ONE query.
     """
-    # Verify ownership
     b = (
         supabase_admin.table("buildings")
         .select("id")
@@ -191,7 +206,6 @@ def list_vacant_decks(user_id: str, building_id: str):
     if not b.data:
         return []
 
-    # One nested query: deck → bed → room → floor, filtered by vacant + building
     res = (
         supabase_admin.table("decks")
         .select("""
@@ -215,7 +229,6 @@ def list_vacant_decks(user_id: str, building_id: str):
         room = bed.get("rooms") or {}
         floor = room.get("floors") or {}
 
-        # Skip if the chain is broken (data integrity issue)
         if not bed or not room or not floor:
             continue
 
@@ -227,4 +240,5 @@ def list_vacant_decks(user_id: str, building_id: str):
             "deck_id": d["id"],
             "label": f"{floor_name} → Room {room_name} → {bed_name} ({d['position']})",
         })
+
     return result

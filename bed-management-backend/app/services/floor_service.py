@@ -2,6 +2,9 @@ from app.database import supabase_admin
 
 
 def list_floors(user_id: str, building_id: str):
+    """
+    Return floors for a building with room/bed/occupied counts.
+    """
     # Verify building belongs to user
     b = (
         supabase_admin.table("buildings")
@@ -13,7 +16,6 @@ def list_floors(user_id: str, building_id: str):
     if not b.data:
         return None
 
-    # Get floors
     floors = (
         supabase_admin.table("floors")
         .select("*")
@@ -22,7 +24,6 @@ def list_floors(user_id: str, building_id: str):
         .execute()
     ).data
 
-    # Attach room/occupied counts
     for floor in floors:
         rooms = (
             supabase_admin.table("rooms")
@@ -41,7 +42,7 @@ def list_floors(user_id: str, building_id: str):
                 .in_("room_id", room_ids)
                 .execute()
             ).data
-            bed_ids = [b["id"] for b in beds]
+            bed_ids = [b_["id"] for b_ in beds]
 
             if bed_ids:
                 decks = (
@@ -61,6 +62,9 @@ def list_floors(user_id: str, building_id: str):
 
 
 def list_rooms(user_id: str, floor_id: str):
+    """
+    List rooms with beds, decks, and occupant info in ONE nested query.
+    """
     # Verify floor belongs to user via building
     f = (
         supabase_admin.table("floors")
@@ -72,10 +76,11 @@ def list_rooms(user_id: str, floor_id: str):
         return None
 
     floor = f.data[0]
-    if floor["buildings"]["user_id"] != user_id:
+    buildings = floor.get("buildings") or {}
+    if buildings.get("user_id") != user_id:
         return None
 
-    # ONE nested query: rooms → beds → decks + occupants
+    # One nested query: rooms → beds → decks → occupants
     res = (
         supabase_admin.table("rooms")
         .select("""
@@ -84,9 +89,7 @@ def list_rooms(user_id: str, floor_id: str):
                 id, name,
                 decks (
                     id, position, monthly_rate, status,
-                    occupants (
-                        id, full_name, status, phone
-                    )
+                    occupants ( id, full_name, status, phone )
                 )
             )
         """)
@@ -109,11 +112,9 @@ def list_rooms(user_id: str, floor_id: str):
             decks = bed.get("decks") or []
             decks.sort(key=lambda d: deck_order.get(d.get("position"), 99))
 
-            # Enrich each deck with occupant info + payment balance
             for deck in decks:
                 occupants = deck.pop("occupants", None) or []
 
-                # Find the active occupant
                 active = next(
                     (o for o in occupants if o.get("status") == "Active"),
                     occupants[0] if occupants else None,
@@ -124,7 +125,6 @@ def list_rooms(user_id: str, floor_id: str):
                     deck["occupant_name"] = active["full_name"]
                     deck["occupant_phone"] = active.get("phone")
 
-                    # Get latest payment for balance
                     pays = (
                         supabase_admin.table("payments")
                         .select("amount_paid, balance, status")
@@ -155,3 +155,104 @@ def list_rooms(user_id: str, floor_id: str):
         room["occupied_decks"] = occupied_decks
 
     return rooms
+
+
+def get_building_stats(user_id: str, building_id: str):
+    """
+    Return aggregated stats for a building.
+    """
+    b = (
+        supabase_admin.table("buildings")
+        .select("id, name")
+        .eq("id", building_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not b.data:
+        return None
+
+    floors = (
+        supabase_admin.table("floors")
+        .select("id")
+        .eq("building_id", building_id)
+        .execute()
+    ).data
+    floor_ids = [f["id"] for f in floors]
+
+    room_ids = []
+    if floor_ids:
+        rooms = (
+            supabase_admin.table("rooms")
+            .select("id")
+            .in_("floor_id", floor_ids)
+            .execute()
+        ).data
+        room_ids = [r["id"] for r in rooms]
+
+    bed_ids = []
+    if room_ids:
+        beds = (
+            supabase_admin.table("beds")
+            .select("id")
+            .in_("room_id", room_ids)
+            .execute()
+        ).data
+        bed_ids = [b_["id"] for b_ in beds]
+
+    total_decks = 0
+    occupied = 0
+    if bed_ids:
+        decks = (
+            supabase_admin.table("decks")
+            .select("id, status")
+            .in_("bed_id", bed_ids)
+            .execute()
+        ).data
+        total_decks = len(decks)
+        occupied = len([d for d in decks if d["status"] == "Occupied"])
+
+    occupant_count = (
+        supabase_admin.table("occupants")
+        .select("id", count="exact")
+        .eq("building_id", building_id)
+        .eq("status", "Active")
+        .execute()
+    )
+    total_occupants = occupant_count.count or 0
+
+    occ_ids = [
+        o["id"]
+        for o in supabase_admin.table("occupants")
+        .select("id")
+        .eq("building_id", building_id)
+        .execute()
+        .data
+    ]
+
+    total_paid = 0
+    total_pending = 0
+    if occ_ids:
+        payments = (
+            supabase_admin.table("payments")
+            .select("amount_paid, balance, status")
+            .in_("occupant_id", occ_ids)
+            .execute()
+        ).data
+        total_paid = sum(
+            float(p["amount_paid"] or 0) for p in payments if p["status"] == "Paid"
+        )
+        total_pending = sum(
+            float(p["balance"] or 0) for p in payments if p["status"] != "Paid"
+        )
+
+    return {
+        "building_name": b.data[0]["name"],
+        "total_floors": len(floor_ids),
+        "total_rooms": len(room_ids),
+        "total_beds": total_decks,
+        "occupied_beds": occupied,
+        "available_beds": total_decks - occupied,
+        "total_occupants": total_occupants,
+        "total_paid": total_paid,
+        "total_pending": total_pending,
+    }
