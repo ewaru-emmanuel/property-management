@@ -34,17 +34,23 @@ const Occupants = () => {
   });
 
   // ---------- Queries ----------
+  // Fix C — Occupants query cache: 5 min fresh, 30 min in memory
   const { data: occupants = [], isLoading, error } = useQuery({
     queryKey: ['occupants', selectedBuilding?.id],
     queryFn: () => api.get(`/api/occupants?building_id=${selectedBuilding.id}`),
     enabled: !!selectedBuilding,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
   });
 
+  // Fix A + B — Vacant decks: waits for occupants, then caches 10 min
   const { data: vacantDecks = [] } = useQuery({
     queryKey: ['decks', selectedBuilding?.id],
     queryFn: () =>
       api.get(`/api/occupants/vacant-decks?building_id=${selectedBuilding.id}`),
-    enabled: !!selectedBuilding,
+    enabled: !!selectedBuilding && !isLoading,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
   });
 
   // ---------- Mutations ----------
@@ -90,7 +96,6 @@ const Occupants = () => {
     // Normalize the stored date to YYYY-MM-DD
     let checkInISO = occupant.check_in_date || '';
     if (checkInISO && !/^\d{4}-\d{2}-\d{2}$/.test(checkInISO)) {
-      // Try DD/MM/YYYY
       const parts = checkInISO.split('/');
       if (parts.length === 3) {
         const [d, m, y] = parts;
