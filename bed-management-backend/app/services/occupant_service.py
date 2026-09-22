@@ -98,6 +98,70 @@ def create_occupant(user_id: str, payload: dict):
     return occupant
 
 
+def update_occupant(user_id: str, occupant_id: str, payload: dict):
+    # Verify occupant exists and belongs to user's building
+    o = (
+        supabase_admin.table("occupants")
+        .select("id, deck_id, building_id")
+        .eq("id", occupant_id)
+        .execute()
+    ).data
+    if not o:
+        raise Exception("Occupant not found")
+
+    building = (
+        supabase_admin.table("buildings")
+        .select("id")
+        .eq("id", o[0]["building_id"])
+        .eq("user_id", user_id)
+        .execute()
+    ).data
+    if not building:
+        raise Exception("Not authorized")
+
+    old_deck_id = o[0].get("deck_id")
+    new_deck_id = payload.get("deck_id")
+
+    # Build the update dict — only include fields that were actually sent
+    update_data = {}
+    for field in [
+        "full_name",
+        "phone",
+        "email",
+        "emergency_contact",
+        "check_in_date",
+        "status",
+    ]:
+        if payload.get(field) is not None:
+            update_data[field] = payload[field]
+
+    # Handle deck swap if a new deck is provided and different
+    if new_deck_id and new_deck_id != old_deck_id:
+        update_data["deck_id"] = new_deck_id
+
+        # Free the old deck
+        if old_deck_id:
+            supabase_admin.table("decks").update(
+                {"status": "Vacant"}
+            ).eq("id", old_deck_id).execute()
+
+        # Occupy the new deck
+        supabase_admin.table("decks").update(
+            {"status": "Occupied"}
+        ).eq("id", new_deck_id).execute()
+
+    if not update_data:
+        return {"message": "Nothing to update"}
+
+    res = (
+        supabase_admin.table("occupants")
+        .update(update_data)
+        .eq("id", occupant_id)
+        .execute()
+    )
+    return res.data[0] if res.data else {"message": "Updated"}
+
+
 def delete_occupant(user_id: str, occupant_id: str):
     # Verify ownership
     o = (

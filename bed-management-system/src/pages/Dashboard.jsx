@@ -2,9 +2,11 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useBuildings } from '../context/BuildingsContext';
+import { useCurrency } from '../hooks/useCurrency';
 
 function Dashboard() {
   const { selectedBuilding } = useBuildings();
+  const { format: formatMoney } = useCurrency();
 
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['stats', selectedBuilding?.id],
@@ -16,7 +18,7 @@ function Dashboard() {
     return (
       <div className="dashboard">
         <div className="page-heading">
-          <h1>Dashboard</h1>
+          <h1>📊 Dashboard</h1>
           <p>Select or create a building to see stats.</p>
         </div>
       </div>
@@ -26,7 +28,7 @@ function Dashboard() {
   return (
     <div className="dashboard">
       <div className="page-heading">
-        <h1>{selectedBuilding.name} — Dashboard</h1>
+        <h1>🏢 {selectedBuilding.name} — Dashboard</h1>
         <p>Welcome back, Admin!</p>
       </div>
 
@@ -62,12 +64,12 @@ function Dashboard() {
             </div>
             <div className="stat-card">
               <span className="stat-label">Total Paid</span>
-              <strong>${Number(stats.total_paid || 0).toFixed(2)}</strong>
+              <strong>{formatMoney(stats.total_paid)}</strong>
             </div>
             <div className="stat-card">
               <span className="stat-label">Pending Balance</span>
               <strong style={{ color: '#f59e0b' }}>
-                ${Number(stats.total_pending || 0).toFixed(2)}
+                {formatMoney(stats.total_pending)}
               </strong>
             </div>
           </div>
@@ -84,7 +86,7 @@ function Dashboard() {
                 <span>→ Beds currently occupied</span>
               </div>
               <div className="activity-item">
-                <span>${Number(stats.total_pending || 0).toFixed(2)}</span>
+                <span>{formatMoney(stats.total_pending)}</span>
                 <span>→ Outstanding balance</span>
               </div>
             </div>

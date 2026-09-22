@@ -4,6 +4,13 @@ import { api } from '../lib/api';
 import { useBuildings } from '../context/BuildingsContext';
 import '../styles/occupant.css';
 
+const getInitials = (name = '') => {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 const Occupants = () => {
   const { selectedBuilding } = useBuildings();
   const qc = useQueryClient();
@@ -11,6 +18,8 @@ const Occupants = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [showModal, setShowModal] = useState(false);
+  const [editingOccupant, setEditingOccupant] = useState(null);   // null = add mode
+  const [selectedOccupant, setSelectedOccupant] = useState(null); // bottom sheet
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
@@ -18,6 +27,7 @@ const Occupants = () => {
     emergency_contact: '',
     deck_id: '',
     check_in_date: new Date().toLocaleDateString(),
+    status: 'Active',
   });
 
   // ---------- Queries ----------
@@ -34,8 +44,6 @@ const Occupants = () => {
   });
 
   // ---------- Mutations ----------
-
-  // Add occupant — optimistic
   const createMutation = useMutation({
     mutationFn: (payload) => api.post('/api/occupants', payload),
 
@@ -44,9 +52,7 @@ const Occupants = () => {
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData(key);
 
-      // Try to derive display info from the chosen deck label
       const deckInfo = vacantDecks.find((d) => d.deck_id === newOcc.deck_id);
-      // Label format: "Floor 1 → Room 101 → Bed 1 (Upper)"
       let floorName = '';
       let roomName = '';
       let bedName = '';
@@ -77,8 +83,6 @@ const Occupants = () => {
       };
 
       qc.setQueryData(key, (old = []) => [optimistic, ...old]);
-
-      // Also remove that deck from the vacant list optimistically
       qc.setQueryData(['decks', selectedBuilding.id], (old = []) =>
         old.filter((d) => d.deck_id !== newOcc.deck_id)
       );
@@ -87,12 +91,8 @@ const Occupants = () => {
     },
 
     onError: (_err, _newOcc, ctx) => {
-      if (ctx?.previous) {
-        qc.setQueryData(['occupants', selectedBuilding.id], ctx.previous);
-      }
-      if (ctx?.previousDecks) {
-        qc.setQueryData(['decks', selectedBuilding.id], ctx.previousDecks);
-      }
+      if (ctx?.previous) qc.setQueryData(['occupants', selectedBuilding.id], ctx.previous);
+      if (ctx?.previousDecks) qc.setQueryData(['decks', selectedBuilding.id], ctx.previousDecks);
       alert('Failed to add occupant');
     },
 
@@ -103,7 +103,17 @@ const Occupants = () => {
     },
   });
 
-  // Delete occupant — optimistic
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }) => api.put(`/api/occupants/${id}`, payload),
+
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['occupants'] });
+      qc.invalidateQueries({ queryKey: ['decks'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
+    onError: (err) => alert('Failed to update: ' + err.message),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/api/occupants/${id}`),
 
@@ -111,16 +121,12 @@ const Occupants = () => {
       const key = ['occupants', selectedBuilding.id];
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData(key);
-
       qc.setQueryData(key, (old = []) => old.filter((o) => o.id !== id));
-
       return { previous };
     },
 
     onError: (_err, _id, ctx) => {
-      if (ctx?.previous) {
-        qc.setQueryData(['occupants', selectedBuilding.id], ctx.previous);
-      }
+      if (ctx?.previous) qc.setQueryData(['occupants', selectedBuilding.id], ctx.previous);
       alert('Failed to delete occupant');
     },
 
@@ -132,6 +138,38 @@ const Occupants = () => {
   });
 
   // ---------- Handlers ----------
+
+  // Open modal in ADD mode
+  const handleOpenAdd = () => {
+    setEditingOccupant(null);
+    setFormData({
+      full_name: '',
+      phone: '',
+      email: '',
+      emergency_contact: '',
+      deck_id: '',
+      check_in_date: new Date().toLocaleDateString(),
+      status: 'Active',
+    });
+    setShowModal(true);
+  };
+
+  // Open modal in EDIT mode
+  const handleOpenEdit = (occupant) => {
+    setEditingOccupant(occupant);
+    setFormData({
+      full_name: occupant.full_name || '',
+      phone: occupant.phone || '',
+      email: occupant.email || '',
+      emergency_contact: occupant.emergency_contact || '',
+      deck_id: occupant.deck_id || '',
+      check_in_date: occupant.check_in_date || '',
+      status: occupant.status || 'Active',
+    });
+    setSelectedOccupant(null); // close sheet if open
+    setShowModal(true);
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -140,38 +178,46 @@ const Occupants = () => {
     e.preventDefault();
     if (!selectedBuilding) return;
 
-    const payload = {
-      building_id: selectedBuilding.id,
-      deck_id: formData.deck_id || null,
-      full_name: formData.full_name,
-      phone: formData.phone,
-      email: formData.email,
-      emergency_contact: formData.emergency_contact,
-      check_in_date: formData.check_in_date,
-    };
-
-    // Close the modal INSTANTLY
-    setShowModal(false);
-    setFormData({
-      full_name: '',
-      phone: '',
-      email: '',
-      emergency_contact: '',
-      deck_id: '',
-      check_in_date: new Date().toLocaleDateString(),
-    });
-
-    // Fire the mutation (optimistic add appears immediately)
-    createMutation.mutate(payload, {
-      onError: () => {
-        // Optional: reopen modal or notify
-      },
-    });
+    if (editingOccupant) {
+      // EDIT
+      const payload = {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        email: formData.email,
+        emergency_contact: formData.emergency_contact,
+        check_in_date: formData.check_in_date,
+        status: formData.status,
+        deck_id: formData.deck_id || undefined,
+      };
+      updateMutation.mutate(
+        { id: editingOccupant.id, payload },
+        {
+          onSuccess: () => {
+            setShowModal(false);
+            setEditingOccupant(null);
+          },
+        }
+      );
+    } else {
+      // ADD
+      const payload = {
+        building_id: selectedBuilding.id,
+        deck_id: formData.deck_id || null,
+        full_name: formData.full_name,
+        phone: formData.phone,
+        email: formData.email,
+        emergency_contact: formData.emergency_contact,
+        check_in_date: formData.check_in_date,
+      };
+      createMutation.mutate(payload);
+      setShowModal(false);
+    }
   };
 
   const handleDelete = (id) => {
     if (window.confirm('Delete this occupant?')) {
       deleteMutation.mutate(id);
+      setSelectedOccupant(null);
     }
   };
 
@@ -194,6 +240,19 @@ const Occupants = () => {
     );
   }
 
+  // Decks shown in edit mode: all vacant + the occupant's current deck
+  const deckOptions = editingOccupant
+    ? [
+        ...(editingOccupant.deck_id
+          ? [{
+              deck_id: editingOccupant.deck_id,
+              label: `${editingOccupant.floor_name || ''} → Room ${editingOccupant.room_name || ''} → ${editingOccupant.bed_name || ''} (${editingOccupant.deck_position || ''})`,
+            }]
+          : []),
+        ...vacantDecks,
+      ]
+    : vacantDecks;
+
   return (
     <div className="occupants-page">
       <div className="occupants-header">
@@ -201,7 +260,7 @@ const Occupants = () => {
           <h2>{selectedBuilding.name} — Occupants</h2>
           <p className="welcome">Manage all occupants in this building.</p>
         </div>
-        <button className="add-occupant-btn" onClick={() => setShowModal(true)}>
+        <button className="add-occupant-btn" onClick={handleOpenAdd}>
           Add Occupant
         </button>
       </div>
@@ -243,7 +302,6 @@ const Occupants = () => {
                 <th>Deck</th>
                 <th>Phone</th>
                 <th>Status</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -252,26 +310,26 @@ const Occupants = () => {
                   <tr
                     key={o.id}
                     style={o._optimistic ? { opacity: 0.6 } : undefined}
+                    className="occupant-row"
+                    onClick={() => setSelectedOccupant(o)}
                   >
-                    <td>{o.full_name}</td>
-                    <td>{o.floor_name || '—'}</td>
-                    <td>{o.room_name || '—'}</td>
-                    <td>{o.bed_name || '—'}</td>
-                    <td>{o.deck_position || '—'}</td>
-                    <td>{o.phone || '—'}</td>
-                    <td>
+                    <td data-label="Name" className="cell-name">
+                      <div className="occupant-avatar">
+                        {getInitials(o.full_name)}
+                      </div>
+                      <span className="occupant-name-text">{o.full_name}</span>
+                    </td>
+                    <td data-label="Floor">{o.floor_name || '—'}</td>
+                    <td data-label="Room">{o.room_name || '—'}</td>
+                    <td data-label="Bed">{o.bed_name || '—'}</td>
+                    <td data-label="Deck">{o.deck_position || '—'}</td>
+                    <td data-label="Phone">{o.phone || '—'}</td>
+                    <td data-label="Status">
                       <span className={`status-badge ${o.status?.toLowerCase()}`}>
                         {o.status}
                       </span>
                     </td>
-                    <td>
-                      <button
-                        className="action-btn delete"
-                        onClick={() => handleDelete(o.id)}
-                      >
-                        🗑️
-                      </button>
-                    </td>
+                    
                   </tr>
                 ))
               ) : (
@@ -286,11 +344,91 @@ const Occupants = () => {
         </div>
       )}
 
+      {/* ---------- Bottom Sheet (mobile/tablet) ---------- */}
+      {selectedOccupant && (
+        <div
+          className="occupant-sheet-overlay"
+          onClick={() => setSelectedOccupant(null)}
+        >
+          <div className="occupant-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+
+            <div className="sheet-header">
+              <div className="occupant-avatar large">
+                {getInitials(selectedOccupant.full_name)}
+              </div>
+              <h3>{selectedOccupant.full_name}</h3>
+              <span className={`status-badge ${selectedOccupant.status?.toLowerCase()}`}>
+                {selectedOccupant.status}
+              </span>
+            </div>
+
+            <div className="sheet-details">
+              <div className="sheet-row">
+                <span className="sheet-label"> Floor</span>
+                <span>{selectedOccupant.floor_name || '—'}</span>
+              </div>
+              <div className="sheet-row">
+                <span className="sheet-label">Room</span>
+                <span>{selectedOccupant.room_name || '—'}</span>
+              </div>
+              <div className="sheet-row">
+                <span className="sheet-label">Bed / Deck</span>
+                <span>
+                  {selectedOccupant.bed_name || '—'}
+                  {selectedOccupant.deck_position
+                    ? ` · ${selectedOccupant.deck_position}`
+                    : ''}
+                </span>
+              </div>
+              <div className="sheet-row">
+                <span className="sheet-label">Phone</span>
+                <span>{selectedOccupant.phone || '—'}</span>
+              </div>
+              <div className="sheet-row">
+                <span className="sheet-label">Email</span>
+                <span>{selectedOccupant.email || '—'}</span>
+              </div>
+              <div className="sheet-row">
+                <span className="sheet-label">Emergency</span>
+                <span>{selectedOccupant.emergency_contact || '—'}</span>
+              </div>
+              <div className="sheet-row">
+                <span className="sheet-label">Check-in</span>
+                <span>{selectedOccupant.check_in_date || '—'}</span>
+              </div>
+            </div>
+
+            <div className="sheet-actions">
+              <button
+                className="sheet-edit-btn"
+                onClick={() => handleOpenEdit(selectedOccupant)}
+              >
+                Edit Occupant
+              </button>
+              <button
+                className="sheet-delete-btn"
+                onClick={() => handleDelete(selectedOccupant.id)}
+              >
+                Delete Occupant
+              </button>
+              <button
+                className="sheet-cancel-btn"
+                onClick={() => setSelectedOccupant(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Add / Edit Modal ---------- */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Check In New Occupant</h3>
+              <h3>{editingOccupant ? 'Edit Occupant' : 'Check In New Occupant'}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}>
                 ✕
               </button>
@@ -340,15 +478,15 @@ const Occupants = () => {
               </div>
 
               <div className="form-group">
-                <label>Assign to Vacant Deck *</label>
+                <label>{editingOccupant ? 'Assigned Deck (change if moving)' : 'Assign to Vacant Deck *'}</label>
                 <select
                   name="deck_id"
                   value={formData.deck_id}
                   onChange={handleInputChange}
-                  required
+                  required={!editingOccupant}
                 >
                   <option value="">-- Select deck --</option>
-                  {vacantDecks.map((d) => (
+                  {deckOptions.map((d) => (
                     <option key={d.deck_id} value={d.deck_id}>
                       {d.label}
                     </option>
@@ -356,14 +494,29 @@ const Occupants = () => {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>Check-in Date</label>
-                <input
-                  type="text"
-                  name="check_in_date"
-                  value={formData.check_in_date}
-                  onChange={handleInputChange}
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Check-in Date</label>
+                  <input
+                    type="text"
+                    name="check_in_date"
+                    value={formData.check_in_date}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                {editingOccupant && (
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="form-actions">
@@ -375,7 +528,7 @@ const Occupants = () => {
                   Cancel
                 </button>
                 <button type="submit" className="submit-btn">
-                  Check In
+                  {editingOccupant ? 'Save Changes' : 'Check In'}
                 </button>
               </div>
             </form>

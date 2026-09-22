@@ -3,6 +3,9 @@
   max-width: 720px;
 }
 
+/* =========================
+   SECTIONS
+========================= */
 .settings-section {
   background: #fff;
   padding: 24px;
@@ -19,6 +22,9 @@
   border-bottom: 2px solid #f1f5f9;
 }
 
+/* =========================
+   FORM FIELDS
+========================= */
 .settings-group {
   margin-bottom: 16px;
 }
@@ -53,6 +59,9 @@
   cursor: not-allowed;
 }
 
+/* =========================
+   BUTTONS
+========================= */
 .save-settings-btn {
   margin-top: 8px;
   padding: 10px 24px;
@@ -75,6 +84,9 @@
   cursor: not-allowed;
 }
 
+/* =========================
+   STATUS MESSAGES
+========================= */
 .settings-msg {
   padding: 10px 14px;
   border-radius: 6px;
@@ -92,8 +104,80 @@
   color: #991b1b;
 }
 
-@media (max-width: 640px) {
+.settings-group select {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.settings-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (max-width: 768px) {
+  .settings-group select {
+    max-width: 100%;
+    font-size: 16px;
+  }
+}
+
+/* =========================
+   RESPONSIVE — MOBILE
+========================= */
+@media (max-width: 768px) {
+  .settings-page {
+    max-width: 100%;
+  }
+
+  .settings-section {
+    padding: 18px 16px;
+    margin-top: 16px;
+    border-radius: 8px;
+  }
+
+  .settings-section h3 {
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+
   .settings-group input {
     max-width: 100%;
+    font-size: 16px; /* prevents iOS zoom */
+  }
+
+  .save-settings-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+  }
+}
+
+/* =========================
+   RESPONSIVE — SMALL PHONES
+========================= */
+@media (max-width: 480px) {
+  .settings-section {
+    padding: 16px 14px;
+  }
+
+  .settings-section h3 {
+    font-size: 15px;
+  }
+
+  .settings-group label {
+    font-size: 13px;
+  }
+
+  .settings-group input {
+    padding: 10px;
+    font-size: 15px;
   }
 }

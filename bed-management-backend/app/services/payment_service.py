@@ -98,3 +98,88 @@ def create_payment(user_id: str, payload: dict):
         .execute()
     )
     return res.data[0]
+
+
+def update_payment(user_id: str, payment_id: str, payload: dict):
+    # Verify payment exists and belongs to user's building
+    p = (
+        supabase_admin.table("payments")
+        .select("id, occupant_id")
+        .eq("id", payment_id)
+        .execute()
+    ).data
+    if not p:
+        raise Exception("Payment not found")
+
+    # Verify the occupant's building belongs to this user
+    occ = (
+        supabase_admin.table("occupants")
+        .select("id, building_id")
+        .eq("id", p[0]["occupant_id"])
+        .execute()
+    ).data
+    if not occ:
+        raise Exception("Occupant not found")
+
+    building = (
+        supabase_admin.table("buildings")
+        .select("id")
+        .eq("id", occ[0]["building_id"])
+        .eq("user_id", user_id)
+        .execute()
+    ).data
+    if not building:
+        raise Exception("Not authorized")
+
+    # Build update — skip empty values so we don't wipe them
+    update_data = {}
+    for field in ["amount_paid", "balance", "due_date", "status", "notes"]:
+        value = payload.get(field)
+        if value is not None and value != "":
+            update_data[field] = value
+
+    if not update_data:
+        return {"message": "Nothing to update"}
+
+    res = (
+        supabase_admin.table("payments")
+        .update(update_data)
+        .eq("id", payment_id)
+        .execute()
+    )
+    return res.data[0] if res.data else {"message": "Updated"}
+
+
+def delete_payment(user_id: str, payment_id: str):
+    # Verify payment exists
+    p = (
+        supabase_admin.table("payments")
+        .select("id, occupant_id")
+        .eq("id", payment_id)
+        .execute()
+    ).data
+    if not p:
+        raise Exception("Payment not found")
+
+    # Verify ownership via occupant → building → user
+    occ = (
+        supabase_admin.table("occupants")
+        .select("id, building_id")
+        .eq("id", p[0]["occupant_id"])
+        .execute()
+    ).data
+    if not occ:
+        raise Exception("Occupant not found")
+
+    building = (
+        supabase_admin.table("buildings")
+        .select("id")
+        .eq("id", occ[0]["building_id"])
+        .eq("user_id", user_id)
+        .execute()
+    ).data
+    if not building:
+        raise Exception("Not authorized")
+
+    supabase_admin.table("payments").delete().eq("id", payment_id).execute()
+    return {"deleted": True}

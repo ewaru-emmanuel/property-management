@@ -2,12 +2,15 @@
   padding: 0;
 }
 
-/* Header with Add Button */
+/* =========================
+   HEADER (title + add button)
+========================= */
 .occupants-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
+  gap: 12px;
 }
 
 .add-occupant-btn {
@@ -28,7 +31,9 @@
   background: #2563eb;
 }
 
-/* Search and Filter Bar */
+/* =========================
+   SEARCH + FILTER BAR
+========================= */
 .search-filter-bar {
   display: flex;
   align-items: center;
@@ -84,7 +89,9 @@
   margin-left: auto;
 }
 
-/* Table */
+/* =========================
+   TABLE (desktop)
+========================= */
 .occupants-table-wrapper {
   background: #fff;
   border-radius: 8px;
@@ -145,7 +152,14 @@
   font-size: 16px;
 }
 
-/* Action Buttons */
+/* Desktop-only: hide avatar + initials text (it's a mobile feature) */
+.occupant-avatar {
+  display: none;
+}
+
+/* =========================
+   ACTION BUTTONS
+========================= */
 .action-btn {
   padding: 4px 8px;
   border: none;
@@ -174,7 +188,9 @@
   background: #fca5a5;
 }
 
-/* Modal Styles */
+/* =========================
+   MODAL (Add Occupant)
+========================= */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -187,6 +203,7 @@
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease;
+  padding: 16px;
 }
 
 .modal-content {
@@ -201,38 +218,18 @@
   animation: slideUp 0.3s ease;
 }
 
-.modal-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
+.modal-content::-webkit-scrollbar { width: 6px; }
+.modal-content::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+.modal-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
@@ -262,7 +259,9 @@
   color: #ef4444;
 }
 
-/* Form Sections */
+/* =========================
+   FORM
+========================= */
 .form-section {
   margin-bottom: 20px;
 }
@@ -314,11 +313,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.form-group input:read-only {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
 .form-actions {
   display: flex;
   gap: 12px;
@@ -359,25 +353,179 @@
   background: #16a34a;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* =========================
+   BOTTOM SHEET (mobile + tablet)
+========================= */
+.occupant-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.occupant-sheet {
+  background: #fff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px 24px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+.sheet-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 16px;
+}
+
+.occupant-avatar.large {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.sheet-header h3 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.sheet-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.sheet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8fafc;
+  gap: 12px;
+}
+
+.sheet-row:last-child {
+  border-bottom: none;
+}
+
+.sheet-label {
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.sheet-row > span:last-child {
+  color: #1e293b;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sheet-delete-btn {
+  width: 100%;
+  padding: 14px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sheet-delete-btn:hover {
+  background: #fca5a5;
+}
+
+.sheet-cancel-btn {
+  width: 100%;
+  padding: 14px;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sheet-cancel-btn:hover {
+  background: #e2e8f0;
+}
+
+/* =========================
+   RESPONSIVE — TABLET + MOBILE
+   Table becomes gallery grid
+========================= */
+@media (max-width: 1024px) {
+  /* Compact header */
   .occupants-header {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+    margin-bottom: 12px;
   }
 
   .add-occupant-btn {
     width: 100%;
     text-align: center;
+    margin-top: 0;
+    padding: 12px;
   }
 
+  /* Stack the filter bar */
   .search-filter-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+    margin-bottom: 16px;
   }
 
-  .search-box {
+  .search-box,
+  .filter-box,
+  .filter-box select {
+    width: 100%;
     min-width: unset;
   }
 
@@ -386,26 +534,177 @@
     text-align: center;
   }
 
+  /* Kill the old table wrapper styling */
   .occupants-table-wrapper {
-    overflow-x: auto;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
   }
 
-  .occupants-table {
-    font-size: 14px;
-    min-width: 700px;
+  /* Hide the thead */
+  .occupants-table thead {
+    display: none;
   }
 
-  .occupants-table th,
-  .occupants-table td {
-    padding: 10px 12px;
+  /* tbody becomes a grid */
+  .occupants-table,
+  .occupants-table tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    width: 100%;
+    border-collapse: separate;
+  }
+
+  /* Each tr becomes a card */
+  .occupants-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px 10px 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    position: relative;
+    overflow: hidden;
+    min-height: 170px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .occupants-table tbody tr:active {
+    transform: scale(0.98);
+  }
+
+  /* Hide all cells by default */
+  .occupants-table tbody td {
+    display: none;
+    padding: 0;
+    border: none;
+    text-align: center;
+    color: #64748b;
+  }
+
+  /* ---- NAME CELL — avatar + name ---- */
+  .occupants-table tbody td.cell-name {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0 10px;
+  }
+
+  .occupant-avatar {
+    display: flex;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    flex-shrink: 0;
+  }
+
+  .occupant-name-text {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e293b;
+    text-align: center;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
+  }
+
+  /* ---- LOCATION BLOCK ---- */
+  .occupants-table tbody td[data-label="Floor"],
+  .occupants-table tbody td[data-label="Room"],
+  .occupants-table tbody td[data-label="Deck"] {
+    display: block;
+    font-size: 11px;
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  .occupants-table tbody td[data-label="Floor"]::before {
+    content: "📍 ";
+  }
+  .occupants-table tbody td[data-label="Room"]::before {
+    content: "🚪 ";
+  }
+  .occupants-table tbody td[data-label="Deck"]::before {
+    content: "🛏️ ";
+  }
+
+  /* ---- STATUS ---- */
+  .occupants-table tbody td[data-label="Status"] {
+    display: flex;
+    justify-content: center;
+    margin-top: auto;
+    padding-top: 10px;
+  }
+
+  .occupants-table .status-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  /* ---- HIDE Bed, Phone, and Actions on mobile ---- */
+  .occupants-table tbody td[data-label="Bed"],
+  .occupants-table tbody td[data-label="Phone"],
+  .occupants-table tbody td[data-label="Actions"] {
+    display: none;
   }
 }
 
-@media (max-width: 550px) {
+/* =========================
+   RESPONSIVE — SMALL PHONES
+========================= */
+@media (max-width: 480px) {
+  .occupants-table tbody {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .occupants-table tbody tr {
+    min-height: 155px;
+    padding: 14px 8px 10px;
+  }
+
+  .occupant-avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 15px;
+  }
+
+  .occupant-name-text {
+    font-size: 12px;
+  }
+
+  .occupants-table tbody td[data-label="Floor"],
+  .occupants-table tbody td[data-label="Room"],
+  .occupants-table tbody td[data-label="Deck"] {
+    font-size: 10px;
+  }
+
+  .occupants-table .status-badge {
+    font-size: 9px;
+    padding: 2px 8px;
+  }
+
   .modal-content {
-    margin: 16px;
-    padding: 20px;
+    margin: 12px;
+    padding: 20px 16px;
     max-height: 95vh;
+    border-radius: 10px;
   }
 
   .form-row {
@@ -420,5 +719,42 @@
   .cancel-btn,
   .submit-btn {
     flex: unset;
+    width: 100%;
   }
+}
+
+/* =========================
+   Desktop bottom sheet styles
+   (kept minimal — it opens centered)
+========================= */
+@media (min-width: 1025px) {
+  .occupant-sheet-overlay {
+    align-items: center;
+  }
+
+  .occupant-sheet {
+    border-radius: 16px;
+    max-height: 80vh;
+    padding: 24px 28px 20px;
+  }
+
+  .sheet-handle {
+    display: none;
+  }
+  .sheet-edit-btn {
+  width: 100%;
+  padding: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sheet-edit-btn:hover {
+  background: #dbeafe;
+}
 }

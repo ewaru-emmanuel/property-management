@@ -2,7 +2,9 @@
   padding: 0;
 }
 
-/* Header */
+/* =========================
+   HEADER
+========================= */
 .admin-header {
   margin-bottom: 20px;
 }
@@ -12,7 +14,9 @@
   margin-bottom: 4px;
 }
 
-/* Tabs */
+/* =========================
+   TABS
+========================= */
 .admin-tabs {
   display: flex;
   gap: 8px;
@@ -23,6 +27,7 @@
   margin-bottom: 20px;
   overflow-x: auto;
   flex-wrap: wrap;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-tab {
@@ -48,7 +53,9 @@
   color: #fff;
 }
 
-/* Content */
+/* =========================
+   CONTENT
+========================= */
 .admin-content {
   background: #fff;
   padding: 24px;
@@ -62,11 +69,13 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
 }
 
 .admin-section-header h3 {
   color: #1e293b;
   font-size: 18px;
+  margin: 0;
 }
 
 .add-btn {
@@ -79,13 +88,16 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .add-btn:hover {
   background: #2563eb;
 }
 
-/* Empty state */
+/* =========================
+   EMPTY STATE
+========================= */
 .empty-state {
   text-align: center;
   padding: 50px 20px;
@@ -105,9 +117,12 @@
   color: #64748b;
 }
 
-/* Table */
+/* =========================
+   TABLE (desktop)
+========================= */
 .admin-table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
@@ -135,10 +150,56 @@
   font-size: 14px;
 }
 
+/* ---------- Column width control ---------- */
+.admin-table th:nth-child(1),
+.admin-table td:nth-child(1) {
+  width: 20%;
+  max-width: 200px;
+}
+
+.admin-table th:nth-child(2),
+.admin-table td:nth-child(2) {
+  width: 20%;
+  max-width: 200px;
+}
+
+.admin-table th:nth-child(3),
+.admin-table td:nth-child(3) {
+  width: auto;
+  max-width: 420px;
+}
+
+.admin-table th:nth-child(4),
+.admin-table td:nth-child(4) {
+  width: 120px;
+  text-align: right;
+}
+
+/* ---------- Truncate long text ---------- */
+.admin-table td:nth-child(1),
+.admin-table td:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-table td:nth-child(3) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+  max-width: 420px;
+}
+
 .admin-table tbody tr:hover {
   background: #f8fafc;
 }
 
+/* =========================
+   ACTION BUTTONS
+========================= */
 .action-btn {
   padding: 4px 8px;
   border: none;
@@ -167,7 +228,15 @@
   background: #fca5a5;
 }
 
-/* Placeholder */
+.action-btn.delete:disabled,
+.action-btn.edit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* =========================
+   PLACEHOLDER SECTION
+========================= */
 .placeholder-section {
   text-align: center;
   padding: 80px 20px;
@@ -187,153 +256,27 @@
   color: #94a3b8;
 }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease;
-}
+/* =========================
+   RESPONSIVE — TABLET + MOBILE
+   Table becomes gallery grid
+========================= */
+@media (max-width: 1024px) {
+  .admin-content {
+    padding: 20px;
+  }
 
-.modal-content {
-  background: #fff;
-  border-radius: 12px;
-  padding: 28px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #1e293b;
-  font-size: 20px;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: color 0.2s;
-  line-height: 1;
-}
-
-.modal-close:hover {
-  color: #ef4444;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  font-weight: 500;
-  color: #475569;
-  margin-bottom: 4px;
-  font-size: 14px;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-  font-family: inherit;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.cancel-btn {
-  flex: 1;
-  padding: 10px;
-  background: #f1f5f9;
-  color: #475569;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.cancel-btn:hover {
-  background: #e2e8f0;
-}
-
-.submit-btn {
-  flex: 2;
-  padding: 10px;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.submit-btn:hover {
-  background: #2563eb;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
+  /* Tabs scroll horizontally */
   .admin-tabs {
-    gap: 4px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 6px;
   }
 
   .admin-tab {
-    padding: 8px 12px;
-    font-size: 13px;
+    flex-shrink: 0;
   }
 
-  .admin-content {
-    padding: 16px;
-  }
-
+  /* Section header stacks */
   .admin-section-header {
     flex-direction: column;
     align-items: stretch;
@@ -342,79 +285,128 @@
 
   .add-btn {
     width: 100%;
+    text-align: center;
   }
 
-  .modal-content {
-    margin: 16px;
-    padding: 20px;
+  /* Kill the table wrapper look */
+  .admin-table-wrapper {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
   }
 
-  .form-actions {
+  /* Hide thead */
+  .admin-table thead {
+    display: none;
+  }
+
+  /* tbody becomes a grid */
+  .admin-table,
+  .admin-table tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    width: 100%;
+    border-collapse: separate;
+  }
+
+  /* Each tr becomes a card */
+  .admin-table tbody tr {
+    display: flex;
     flex-direction: column;
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px 10px 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    position: relative;
+    min-height: 150px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
   }
 
-  .cancel-btn,
-  .submit-btn {
-    flex: unset;
+  .admin-table tbody tr:active {
+    transform: scale(0.98);
+  }
+
+  /* Hide all cells by default */
+  .admin-table tbody td {
+    display: none;
+    padding: 0;
+    border: none;
+    text-align: center;
+    color: #64748b;
+  }
+
+  /* Name cell */
+  .admin-table tbody td.cell-name {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0 10px;
+  }
+
+  /* Address */
+  .admin-table tbody td[data-label="Address"] {
+    display: block;
+    font-size: 11px;
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  .admin-table tbody td[data-label="Address"]::before {
+    content: "📍 ";
+  }
+
+  /* Description — 2 lines max */
+  .admin-table tbody td[data-label="Description"] {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.6;
+    padding: 0;
+    margin-top: 2px;
+  }
+
+  .admin-table tbody td[data-label="Description"]::before {
+    content: "📝 ";
+  }
+
+  /* Hide actions on mobile */
+  .admin-table tbody td[data-label="Actions"] {
+    display: none;
   }
 }
 
+/* =========================
+   RESPONSIVE — SMALL PHONES
+========================= */
+@media (max-width: 480px) {
+  .admin-tab {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
 
-/* Larger modal for multi-step form */
-.modal-content.large {
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
+  .admin-content {
+    padding: 14px 12px;
+  }
 
-.modal-content.large::-webkit-scrollbar {
-  width: 6px;
-}
+  /* 2 columns on small phones */
+  .admin-table tbody {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 
-.modal-content.large::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
+  .admin-table tbody tr {
+    min-height: 140px;
+    padding: 14px 8px 10px;
+  }
 
-.step-indicator {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-.step-description {
-  color: #475569;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-
-.floor-group {
-  background: #f8fafc;
-  padding: 14px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.group-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 12px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.room-group {
-  margin-bottom: 12px;
-  padding-left: 8px;
-  border-left: 3px solid #bfdbfe;
-}
-
-.room-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 6px;
+  .admin-table tbody td[data-label="Address"],
+  .admin-table tbody td[data-label="Description"] {
+    font-size: 10px;
+  }
 }

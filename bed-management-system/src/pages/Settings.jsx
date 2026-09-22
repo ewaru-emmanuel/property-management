@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { CURRENCY_OPTIONS } from '../hooks/useCurrency';
 import '../styles/settings.css';
 
 const Settings = () => {
@@ -9,6 +10,7 @@ const Settings = () => {
   const [profileData, setProfileData] = useState({
     full_name: '',
     phone: '',
+    currency: 'USD',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -19,7 +21,6 @@ const Settings = () => {
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
   const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' });
 
-  // Fetch current user + profile
   const { data: me, isLoading } = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get('/api/auth/me'),
@@ -30,11 +31,11 @@ const Settings = () => {
       setProfileData({
         full_name: me.profile.full_name || '',
         phone: me.profile.phone || '',
+        currency: me.profile.currency || 'USD',
       });
     }
   }, [me]);
 
-  // Save profile
   const profileMutation = useMutation({
     mutationFn: (payload) => api.put('/api/auth/profile', payload),
     onSuccess: () => {
@@ -45,7 +46,6 @@ const Settings = () => {
     onError: (err) => setProfileMsg({ type: 'error', text: err.message }),
   });
 
-  // Change password
   const passwordMutation = useMutation({
     mutationFn: (payload) => api.post('/api/auth/change-password', payload),
     onSuccess: () => {
@@ -100,7 +100,6 @@ const Settings = () => {
               type="email"
               value={me?.user?.email || ''}
               disabled
-              style={{ background: '#f1f5f9', cursor: 'not-allowed' }}
             />
           </div>
 
@@ -124,6 +123,22 @@ const Settings = () => {
                 setProfileData({ ...profileData, phone: e.target.value })
               }
             />
+          </div>
+
+          <div className="settings-group">
+            <label>Currency</label>
+            <select
+              value={profileData.currency}
+              onChange={(e) =>
+                setProfileData({ ...profileData, currency: e.target.value })
+              }
+            >
+              {CURRENCY_OPTIONS.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <button

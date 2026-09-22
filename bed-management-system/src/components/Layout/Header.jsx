@@ -1,6 +1,6 @@
 import { useBuildings } from '../../context/BuildingsContext';
 
-function Header({ onAdminClick, onLogout }) {
+function Header({ onAdminClick, onLogout, onMenuToggle }) {
   const {
     buildings,
     selectedBuilding,
@@ -10,8 +10,18 @@ function Header({ onAdminClick, onLogout }) {
 
   return (
     <header className="header">
-      <div className="logo">
-        <span>Bed Management System</span>
+      <div className="header-left">
+        <button
+          className="menu-toggle"
+          onClick={onMenuToggle}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
+
+        <div className="logo">
+          <span>Bed Management System</span>
+        </div>
       </div>
 
       <div className="header-actions">
@@ -42,12 +52,13 @@ function Header({ onAdminClick, onLogout }) {
         </div>
 
         <div
-          className="admin"
-          onClick={onAdminClick}
-          style={{ cursor: 'pointer' }}
-        >
-          Admin
-        </div>
+  className="admin"
+  onClick={onAdminClick}
+  title="Admin Panel"
+  style={{ cursor: 'pointer' }}
+>
+  👤
+</div>
 
         <button className="logout-button" title="Logout" onClick={onLogout}>
           ⏻

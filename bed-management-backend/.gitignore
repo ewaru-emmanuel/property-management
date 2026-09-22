@@ -42,5 +42,5 @@ dist/
 htmlcov/
 .tox/
 
-# Jupyter (just in case)
+
 .ipynb_checkpoints/

@@ -14,3 +14,47 @@ button,
 select {
   font: inherit;
 }
+
+/* ---------- Base Reset & Responsive Defaults ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%; /* prevent iOS zoom on rotate */
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f4f6f9;
+  color: #1e293b;
+  overflow-x: hidden; /* prevent horizontal scroll on mobile */
+}
+
+/* Fluid typography */
+h1 { font-size: clamp(20px, 4vw, 28px); }
+h2 { font-size: clamp(18px, 3.5vw, 24px); }
+h3 { font-size: clamp(16px, 3vw, 20px); }
+
+/* Images & tables scale safely */
+img, video { max-width: 100%; height: auto; }
+table { border-collapse: collapse; width: 100%; }
+
+/* Universal tap target */
+button, .btn, a.button {
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+/* Global form controls */
+input, select, textarea {
+  font-size: 16px; /* prevents iOS zoom on focus */
+  font-family: inherit;
+}
+
+/* Prevent long words from overflowing */
+.card, .stat-card, .floor-card, .room-card, td, th {
+  word-break: break-word;
+}

@@ -1,29 +1,20 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useBuildings } from '../context/BuildingsContext';
+import BuildingProfileSheet from '../components/BuildingProfileSheet';
+import AddEditBuildingWizard from '../components/AddEditBuildingWizard';
 import '../styles/admin.css';
+import '../styles/occupant.css';
 
 const Admin = () => {
   const { buildings, refreshBuildings } = useBuildings();
+  const qc = useQueryClient();
 
   const [activeTab, setActiveTab] = useState('buildings');
-  const [showModal, setShowModal] = useState(false);
-  const [step, setStep] = useState(1);
-  const [saving, setSaving] = useState(false);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    description: '',
-    floors: [],
-  });
-
-  // Temporary per-step inputs
-  const [floorCount, setFloorCount] = useState(1);
-  const [roomCounts, setRoomCounts] = useState({});
-  const [bedCounts, setBedCounts] = useState({});
-  const [deckCounts, setDeckCounts] = useState({});
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [editingBuilding, setEditingBuilding] = useState(null);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
 
   const tabs = [
     { id: 'buildings', label: 'Buildings' },
@@ -34,166 +25,74 @@ const Admin = () => {
     { id: 'users', label: 'Users' },
   ];
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({ name: '', address: '', description: '', floors: [] });
-    setFloorCount(1);
-    setRoomCounts({});
-    setBedCounts({});
-    setDeckCounts({});
-    setStep(1);
-    setSaving(false);
+  // ---------- Wizard handlers ----------
+  const handleOpenAdd = () => {
+    setEditingBuilding(null);
+    setWizardOpen(true);
   };
 
-  const handleAddNew = () => {
-    resetForm();
-    setShowModal(true);
+  const handleOpenEdit = (building) => {
+    setSelectedBuilding(null);
+    setEditingBuilding(building);
+    setWizardOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    resetForm();
+  const handleWizardClose = () => {
+    setWizardOpen(false);
+    setEditingBuilding(null);
   };
 
-  // Step 1 → build initial floors array
-  const handleStep1Next = () => {
-    if (!formData.name.trim()) {
-      alert('Please enter a building name');
-      return;
+  const handleWizardSaved = async (result, wasEditing) => {
+    const cacheKey = ['buildings'];
+    const previous = qc.getQueryData(cacheKey);
+
+    // Optimistic update
+    if (wasEditing) {
+      qc.setQueryData(cacheKey, (old = []) =>
+        old.map((b) => (b.id === editingBuilding.id ? result : b))
+      );
+    } else {
+      qc.setQueryData(cacheKey, (old = []) => [result, ...old]);
     }
 
-    const floors = Array.from({ length: Number(floorCount) }, (_, i) => ({
-      id: `floor-${i + 1}`,
-      name: `Floor ${i + 1}`,
-      rooms: [],
-    }));
+    // Close wizard
+    setWizardOpen(false);
+    setEditingBuilding(null);
 
-    const initialRoomCounts = {};
-    floors.forEach((f) => (initialRoomCounts[f.id] = 1));
-    setRoomCounts(initialRoomCounts);
-
-    setFormData({ ...formData, floors });
-    setStep(2);
-  };
-
-  // Step 2 → build rooms
-  const handleStep2Next = () => {
-    const updatedFloors = formData.floors.map((floor) => {
-      const count = Number(roomCounts[floor.id] || 1);
-      return {
-        ...floor,
-        rooms: Array.from({ length: count }, (_, i) => ({
-          id: `${floor.id}-room-${i + 1}`,
-          name: `${floor.name.replace('Floor ', '')}${String(i + 1).padStart(2, '0')}`,
-          beds: [],
-        })),
-      };
-    });
-
-    const initialBedCounts = {};
-    updatedFloors.forEach((floor) =>
-      floor.rooms.forEach((room) => (initialBedCounts[room.id] = 1))
-    );
-    setBedCounts(initialBedCounts);
-
-    setFormData({ ...formData, floors: updatedFloors });
-    setStep(3);
-  };
-
-  // Step 3 → build beds
-  const handleStep3Next = () => {
-    const updatedFloors = formData.floors.map((floor) => ({
-      ...floor,
-      rooms: floor.rooms.map((room) => {
-        const count = Number(bedCounts[room.id] || 1);
-        return {
-          ...room,
-          beds: Array.from({ length: count }, (_, i) => ({
-            id: `${room.id}-bed-${i + 1}`,
-            name: `Bed ${i + 1}`,
-            decks: [],
-          })),
-        };
-      }),
-    }));
-
-    const initialDeckCounts = {};
-    updatedFloors.forEach((floor) =>
-      floor.rooms.forEach((room) =>
-        room.beds.forEach((bed) => (initialDeckCounts[bed.id] = 3))
-      )
-    );
-    setDeckCounts(initialDeckCounts);
-
-    setFormData({ ...formData, floors: updatedFloors });
-    setStep(4);
-  };
-
-  // Step 4 → submit to backend
-  const handleFinalSubmit = async () => {
-    setSaving(true);
-
-    const updatedFloors = formData.floors.map((floor) => ({
-      ...floor,
-      rooms: floor.rooms.map((room) => ({
-        ...room,
-        beds: room.beds.map((bed) => {
-          const count = Number(deckCounts[bed.id] || 3);
-          const positions = ['Upper', 'Middle', 'Lower'].slice(0, count);
-          return {
-            ...bed,
-            decks: positions.map((pos) => ({
-              position: pos,
-              monthly_rate: 0,
-            })),
-          };
-        }),
-      })),
-    }));
-
-    const payload = {
-      name: formData.name,
-      address: formData.address,
-      description: formData.description,
-      floors: updatedFloors.map((floor, index) => ({
-        name: floor.name,
-        floor_number: index + 1,
-        rooms: floor.rooms.map((room) => ({
-          name: room.name,
-          room_type: null,
-          beds: room.beds.map((bed) => ({
-            name: bed.name,
-            decks: bed.decks,
-          })),
-        })),
-      })),
-    };
-
+    // Refresh from server in the background
     try {
-      await api.post('/api/buildings', payload);
       await refreshBuildings();
-      handleCloseModal();
     } catch (err) {
-      alert('Failed to save building: ' + err.message);
-    } finally {
-      setSaving(false);
+      if (previous) qc.setQueryData(cacheKey, previous);
+      alert('Failed to refresh buildings: ' + err.message);
     }
   };
 
+  // ---------- Delete building ----------
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this building? All floors, rooms, and beds inside will also be removed.')) {
+    if (
+      !window.confirm('Delete this building? Everything inside will be removed.')
+    )
       return;
-    }
+
+    const cacheKey = ['buildings'];
+    const previous = qc.getQueryData(cacheKey);
+
+    qc.setQueryData(cacheKey, (old = []) => old.filter((b) => b.id !== id));
 
     try {
       await api.delete(`/api/buildings/${id}`);
       await refreshBuildings();
     } catch (err) {
-      alert('Failed to delete building: ' + err.message);
+      if (previous) qc.setQueryData(cacheKey, previous);
+      alert('Failed to delete: ' + err.message);
     }
+    setSelectedBuilding(null);
   };
 
-  // Render tab content
+  // ============================================================
+  //  TAB CONTENT
+  // ============================================================
   const renderTabContent = () => {
     switch (activeTab) {
       case 'buildings':
@@ -201,7 +100,7 @@ const Admin = () => {
           <>
             <div className="admin-section-header">
               <h3>Buildings Management</h3>
-              <button className="add-btn" onClick={handleAddNew}>
+              <button className="add-btn" onClick={handleOpenAdd}>
                 Add Building
               </button>
             </div>
@@ -225,14 +124,40 @@ const Admin = () => {
                   </thead>
                   <tbody>
                     {buildings.map((b) => (
-                      <tr key={b.id}>
-                        <td><strong>{b.name}</strong></td>
-                        <td>{b.address || '—'}</td>
-                        <td>{b.description || '—'}</td>
-                        <td>
+                      <tr
+                        key={b.id}
+                        className="building-row"
+                        style={b._optimistic ? { opacity: 0.6 } : undefined}
+                        onClick={() => setSelectedBuilding(b)}
+                      >
+                        <td data-label="Name" className="cell-name">
+                          <div className="occupant-avatar">
+                            {(b.name || '?')[0].toUpperCase()}
+                          </div>
+                          <span className="occupant-name-text">
+                            {b.name}
+                          </span>
+                        </td>
+                        <td data-label="Address">{b.address || '—'}</td>
+                        <td data-label="Description">
+                          {b.description || '—'}
+                        </td>
+                        <td data-label="Actions">
+                          <button
+                            className="action-btn edit"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEdit(b);
+                            }}
+                          >
+                            ✏️
+                          </button>
                           <button
                             className="action-btn delete"
-                            onClick={() => handleDelete(b.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(b.id);
+                            }}
                           >
                             🗑️
                           </button>
@@ -250,16 +175,19 @@ const Admin = () => {
       case 'rooms':
         return <PlaceholderSection title="Rooms Management" />;
       case 'occupants':
-        return <PlaceholderSection  title="Occupants Management" />;
+        return <PlaceholderSection title="Occupants Management" />;
       case 'payments':
-        return <PlaceholderSection  title="Payments Management" />;
+        return <PlaceholderSection title="Payments Management" />;
       case 'users':
-        return <PlaceholderSection  title="Users Management" />;
+        return <PlaceholderSection title="Users Management" />;
       default:
         return null;
     }
   };
 
+  // ============================================================
+  //  RENDER
+  // ============================================================
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -269,7 +197,6 @@ const Admin = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="admin-tabs">
         {tabs.map((tab) => (
           <button
@@ -284,197 +211,34 @@ const Admin = () => {
 
       <div className="admin-content">{renderTabContent()}</div>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>
-                Add New Building
-                <span className="step-indicator">Step {step} of 4</span>
-              </h3>
-              <button className="modal-close" onClick={handleCloseModal}>✕</button>
-            </div>
+      {/* ---------- Rich Building Profile Sheet ---------- */}
+      {selectedBuilding && (
+        <BuildingProfileSheet
+          building={selectedBuilding}
+          onClose={() => setSelectedBuilding(null)}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
+        />
+      )}
 
-            {/* Step 1: Building Info */}
-            {step === 1 && (
-              <>
-                <div className="form-group">
-                  <label>Building Name *</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g., apollo apartments annex"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Address</label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="e.g., E13 road, plot 25"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Optional notes about this building"
-                    rows="3"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Number of Floors *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={floorCount}
-                    onChange={(e) => setFloorCount(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={handleCloseModal}>
-                    Cancel
-                  </button>
-                  <button type="button" className="submit-btn" onClick={handleStep1Next}>
-                    Next →
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 2: Rooms per Floor */}
-            {step === 2 && (
-              <>
-                <p className="step-description">How many rooms on each floor?</p>
-                {formData.floors.map((floor) => (
-                  <div key={floor.id} className="form-group">
-                    <label>{floor.name} — Number of Rooms</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={roomCounts[floor.id] || 1}
-                      onChange={(e) =>
-                        setRoomCounts({ ...roomCounts, [floor.id]: e.target.value })
-                      }
-                    />
-                  </div>
-                ))}
-
-                <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={() => setStep(1)}>
-                    ← Back
-                  </button>
-                  <button type="button" className="submit-btn" onClick={handleStep2Next}>
-                    Next →
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Beds per Room */}
-            {step === 3 && (
-              <>
-                <p className="step-description">How many beds in each room?</p>
-                {formData.floors.map((floor) => (
-                  <div key={floor.id} className="floor-group">
-                    <h4 className="group-title">{floor.name}</h4>
-                    {floor.rooms.map((room) => (
-                      <div key={room.id} className="form-group">
-                        <label>Room {room.name} — Number of Beds</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={bedCounts[room.id] || 1}
-                          onChange={(e) =>
-                            setBedCounts({ ...bedCounts, [room.id]: e.target.value })
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ))}
-
-                <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={() => setStep(2)}>
-                    ← Back
-                  </button>
-                  <button type="button" className="submit-btn" onClick={handleStep3Next}>
-                    Next →
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 4: Decks per Bed */}
-            {step === 4 && (
-              <>
-                <p className="step-description">
-                  How many deck levels per bed? (1 = Single, 2 = Double, 3 = Triple)
-                </p>
-                {formData.floors.map((floor) => (
-                  <div key={floor.id} className="floor-group">
-                    <h4 className="group-title">{floor.name}</h4>
-                    {floor.rooms.map((room) => (
-                      <div key={room.id} className="room-group">
-                        <h5 className="room-title">Room {room.name}</h5>
-                        {room.beds.map((bed) => (
-                          <div key={bed.id} className="form-group">
-                            <label>{bed.name} — Decks (1–3)</label>
-                            <select
-                              value={deckCounts[bed.id] || 3}
-                              onChange={(e) =>
-                                setDeckCounts({ ...deckCounts, [bed.id]: e.target.value })
-                              }
-                            >
-                              <option value="1">1 — Single</option>
-                              <option value="2">2 — Double (Upper, Lower)</option>
-                              <option value="3">3 — Triple (Upper, Middle, Lower)</option>
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-
-                <div className="form-actions">
-                  <button
-                    type="button"
-                    className="cancel-btn"
-                    onClick={() => setStep(3)}
-                    disabled={saving}
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="button"
-                    className="submit-btn"
-                    onClick={handleFinalSubmit}
-                    disabled={saving}
-                  >
-                    {saving ? 'Saving...' : 'Create Building'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      {/* ---------- Add / Edit Building Wizard ---------- */}
+      {wizardOpen && (
+        <AddEditBuildingWizard
+          building={editingBuilding}
+          onClose={handleWizardClose}
+          onSaved={handleWizardSaved}
+        />
       )}
     </div>
   );
 };
 
-const PlaceholderSection = ({ icon, title }) => (
+// ============================================================
+//  PLACEHOLDER SECTION
+// ============================================================
+const PlaceholderSection = ({ title }) => (
   <div className="placeholder-section">
-    <div className="placeholder-icon">{icon}</div>
+    <div className="placeholder-icon">🚧</div>
     <h3>{title}</h3>
     <p>This section is coming soon. Stay tuned!</p>
   </div>

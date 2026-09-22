@@ -25,6 +25,7 @@ function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [verifyEmail, setVerifyEmail] = useState(null);
   const [resetEmail, setResetEmail] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);   // ✅ MOVED INSIDE
 
   // Verify stored token on boot
   useEffect(() => {
@@ -58,6 +59,7 @@ function App() {
     setAuthView("login");
     setCurrentPage("dashboard");
     setSelectedFloor(null);
+    setSidebarOpen(false);
   };
 
   // 1. Loading
@@ -79,7 +81,7 @@ function App() {
     );
   }
 
-  // 2. Email verification (higher priority than login)
+  // 2. Email verification
   if (verifyEmail) {
     return (
       <VerifyEmail
@@ -147,12 +149,18 @@ function App() {
         <Header
           onAdminClick={() => setCurrentPage("admin")}
           onLogout={handleLogout}
+          onMenuToggle={() => setSidebarOpen((prev) => !prev)}   // ✅ proper toggle
         />
 
         <div className="app-body">
           <Sidebar
             currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
+            setCurrentPage={(page) => {
+              setCurrentPage(page);
+              setSidebarOpen(false);       // auto-close on mobile after nav
+            }}
+            isOpen={sidebarOpen}            // ✅ PASSED
+            onClose={() => setSidebarOpen(false)}  // ✅ PASSED
           />
 
           <main className="main-content">

@@ -52,7 +52,7 @@ const Floors = ({ onSelectFloor }) => {
                 style={{ cursor: 'pointer' }}
               >
                 <h3>{floor.name}</h3>
-                <div classname="floor-details">
+                <div className="floor-details">
                   <p>🛏️ {floor.rooms_count} Rooms</p>
                   <p>👤 {floor.occupied_beds} / {floor.total_beds} Beds</p>
                 </div>

@@ -1,9 +1,9 @@
+import logging
 from app.database import supabase, supabase_admin
 from app.services import verification_service
 from app.services.email_service import get_email_service
-from app.database import supabase, supabase_admin
-from app.services import verification_service
-from app.services.email_service import get_email_service
+
+logger = logging.getLogger(__name__)
 
 
 def login(email: str, password: str):
@@ -13,7 +13,6 @@ def login(email: str, password: str):
             "password": password,
         })
     except Exception as e:
-        # THIS is the real Supabase message
         raise Exception(f"Login failed: {str(e)}")
 
     if not res.user or not res.session:
@@ -27,6 +26,7 @@ def login(email: str, password: str):
             "email": res.user.email,
         },
     }
+
 
 def signup(email: str, password: str, full_name: str = None, phone: str = None):
     # ---------- 1. Check if a user already exists with this email ----------
@@ -45,7 +45,6 @@ def signup(email: str, password: str, full_name: str = None, phone: str = None):
     if existing and not existing.email_confirmed_at:
         try:
             supabase_admin.auth.admin.delete_user(existing.id)
-            # Also clean up any old profile row
             supabase_admin.table("profiles").delete().eq("id", existing.id).execute()
         except Exception as e:
             raise Exception(f"Could not reset unverified user: {str(e)}")
@@ -55,7 +54,7 @@ def signup(email: str, password: str, full_name: str = None, phone: str = None):
         res = supabase_admin.auth.admin.create_user({
             "email": email,
             "password": password,
-            "email_confirm": False,   # must be verified via code
+            "email_confirm": False,
             "user_metadata": {"full_name": full_name},
         })
     except Exception as e:
@@ -71,6 +70,7 @@ def signup(email: str, password: str, full_name: str = None, phone: str = None):
             "id": user.id,
             "full_name": full_name,
             "phone": phone,
+            "currency": "USD",
         }).execute()
     except Exception as e:
         print(f"⚠️ Profile insert failed: {e}")
@@ -82,7 +82,6 @@ def signup(email: str, password: str, full_name: str = None, phone: str = None):
 
     # ---------- 5. Rollback if send fails ----------
     if not sent:
-        # Clean up everything we created
         try:
             supabase_admin.table("profiles").delete().eq("id", user.id).execute()
             supabase_admin.auth.admin.delete_user(user.id)
@@ -118,16 +117,15 @@ def verify_otp(email: str, token: str):
     except Exception as e:
         raise Exception(f"Failed to confirm: {str(e)}")
 
-    # 3. Return success — user must log in manually after
     return {"verified": True, "email": email, "message": "Email verified. Please log in."}
 
+
 def request_password_reset(email: str):
-    # 1. Look up the user — silently
+    # 1. Look up the user
     users = supabase_admin.auth.admin.list_users()
     target = next((u for u in users if u.email == email), None)
 
     # 2. If the user doesn't exist, return the SAME success message
-    #    (prevents email enumeration attacks)
     if not target:
         logger.info(f"Password reset requested for unknown email: {email}")
         return {
@@ -154,25 +152,22 @@ def request_password_reset(email: str):
     if not sent:
         verification_service.delete_codes_for_email(email, "reset")
         logger.error(f"Failed to send reset email to {email}")
-        # Still don't leak — same message
 
     return {
         "message": "If that email exists, a reset code has been sent.",
         "email": email,
     }
 
+
 def reset_password(email: str, token: str, new_password: str):
-    # 1. Verify code
     if not verification_service.verify_code(email, token, "reset"):
         raise Exception("Invalid or expired code")
 
-    # 2. Find the user
     users = supabase_admin.auth.admin.list_users()
     target = next((u for u in users if u.email == email), None)
     if not target:
         raise Exception("User not found")
 
-    # 3. Update password via Supabase admin
     try:
         supabase_admin.auth.admin.update_user_by_id(
             target.id, {"password": new_password}
@@ -195,8 +190,43 @@ def get_profile(user_id: str):
             "id": user_id,
             "full_name": "",
             "phone": "",
+            "currency": "USD",
         }).execute()
         return insert.data[0] if insert.data else None
     except Exception as e:
         print(f"⚠️ Could not auto-create profile for {user_id}: {e}")
         return None
+
+
+def update_profile(user_id: str, full_name: str = None, phone: str = None, currency: str = None):
+    update = {}
+    if full_name is not None:
+        update["full_name"] = full_name
+    if phone is not None:
+        update["phone"] = phone
+    if currency is not None:
+        update["currency"] = currency
+
+    if not update:
+        return {"message": "Nothing to update"}
+
+    res = (
+        supabase_admin.table("profiles")
+        .update(update)
+        .eq("id", user_id)
+        .execute()
+    )
+    return res.data[0] if res.data else {"message": "Updated"} 
+
+def change_password(user_id: str, new_password: str):
+    if len(new_password) < 6:
+        raise Exception("Password must be at least 6 characters")
+
+    try:
+        supabase_admin.auth.admin.update_user_by_id(
+            user_id, {"password": new_password}
+        )
+    except Exception as e:
+        raise Exception(f"Failed to update password: {str(e)}")
+
+    return {"message": "Password updated successfully"}

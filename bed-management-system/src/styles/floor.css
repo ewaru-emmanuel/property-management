@@ -2,13 +2,15 @@
   padding: 0;
 }
 
+/* ---------- Grid: auto-fit columns ---------- */
 .floors-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-top: 20px;
 }
 
+/* ---------- Card ---------- */
 .floor-card {
   background: #fff;
   padding: 16px;
@@ -34,6 +36,7 @@
   font-size: 14px;
 }
 
+/* ---------- Status badge ---------- */
 .status-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -43,17 +46,9 @@
   margin-top: 8px;
 }
 
-.floor-card.empty {
-  border-left-color: #eab308;
-}
-
-.floor-card.partial {
-  border-left-color: #f59e0b;
-}
-
-.floor-card.full {
-  border-left-color: #ef4444;
-}
+.floor-card.empty   { border-left-color: #eab308; }
+.floor-card.partial { border-left-color: #f59e0b; }
+.floor-card.full    { border-left-color: #ef4444; }
 
 .floor-card .status-badge {
   background: #f1f5f9;
@@ -75,20 +70,58 @@
   color: #991b1b;
 }
 
+/* ---------- Responsive ---------- */
+
+/* Tablet — 3 columns */
 @media (max-width: 1024px) {
   .floors-grid {
     grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
   }
 }
 
+/* Mobile — 2 columns, smaller cards */
 @media (max-width: 768px) {
   .floors-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .floor-card {
+    padding: 14px;
+  }
+
+  .floor-card h3 {
+    font-size: 15px;
+  }
+
+  .floor-details p {
+    font-size: 13px;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    padding: 3px 10px;
   }
 }
 
+/* Small phones — 1 column */
 @media (max-width: 480px) {
   .floors-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .floor-card {
+    padding: 12px;
+  }
+
+  .floor-card h3 {
+    font-size: 14px;
+  }
+
+  .floor-details p {
+    font-size: 12px;
   }
 }

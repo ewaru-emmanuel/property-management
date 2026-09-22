@@ -1,3 +1,6 @@
+/* =========================
+   AUTH PAGE WRAPPER
+========================= */
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -7,6 +10,9 @@
   padding: 20px;
 }
 
+/* =========================
+   AUTH CARD
+========================= */
 .auth-card {
   background: #fff;
   border-radius: 16px;
@@ -31,6 +37,9 @@
   font-weight: 500;
 }
 
+/* =========================
+   FORM
+========================= */
 .auth-card .form-group {
   margin-bottom: 16px;
 }
@@ -58,6 +67,9 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* =========================
+   BUTTONS
+========================= */
 .auth-btn {
   width: 100%;
   padding: 12px;
@@ -81,6 +93,9 @@
   cursor: not-allowed;
 }
 
+/* =========================
+   MESSAGES + SWITCH LINK
+========================= */
 .auth-error {
   background: #fee2e2;
   color: #991b1b;
@@ -105,4 +120,74 @@
 
 .auth-switch span:hover {
   text-decoration: underline;
+}
+
+/* =========================
+   RESPONSIVE — SMALL TABLETS
+========================= */
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 32px 24px;
+  }
+}
+
+/* =========================
+   RESPONSIVE — PHONES
+========================= */
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .auth-card {
+    padding: 24px 18px;
+    border-radius: 12px;
+  }
+
+  .auth-card h1 {
+    font-size: 18px;
+  }
+
+  .auth-card h2 {
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  .auth-card label {
+    font-size: 12px;
+  }
+
+  .auth-card input {
+    padding: 11px 12px;
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  .auth-btn {
+    padding: 13px;
+    font-size: 15px;
+  }
+
+  .auth-switch {
+    font-size: 12px;
+    margin-top: 16px;
+  }
+}
+
+/* =========================
+   VERY SMALL PHONES
+========================= */
+@media (max-width: 360px) {
+  .auth-card {
+    padding: 20px 14px;
+  }
+
+  .auth-card h1 {
+    font-size: 16px;
+  }
+
+  .auth-btn {
+    font-size: 14px;
+  }
 }
