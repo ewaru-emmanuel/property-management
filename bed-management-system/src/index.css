@@ -1,27 +1,12 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #f5f6fa;
-  color: #1f2937;
-}
-
-button,
-select {
-  font: inherit;
-}
-
-/* ---------- Base Reset & Responsive Defaults ---------- */
+/* =========================
+   BASE RESET
+========================= */
 * {
   box-sizing: border-box;
 }
 
 html {
-  -webkit-text-size-adjust: 100%; /* prevent iOS zoom on rotate */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -29,7 +14,7 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #f4f6f9;
   color: #1e293b;
-  overflow-x: hidden; /* prevent horizontal scroll on mobile */
+  overflow-x: hidden;
 }
 
 /* Fluid typography */
@@ -37,24 +22,24 @@ h1 { font-size: clamp(20px, 4vw, 28px); }
 h2 { font-size: clamp(18px, 3.5vw, 24px); }
 h3 { font-size: clamp(16px, 3vw, 20px); }
 
-/* Images & tables scale safely */
+/* Images & tables */
 img, video { max-width: 100%; height: auto; }
 table { border-collapse: collapse; width: 100%; }
 
-/* Universal tap target */
-button, .btn, a.button {
-  min-height: 44px;
-  min-width: 44px;
+/* Buttons — larger tap targets for main buttons only */
+button,
+.btn,
+a.button {
   cursor: pointer;
 }
 
-/* Global form controls */
+/* Form controls */
 input, select, textarea {
-  font-size: 16px; /* prevents iOS zoom on focus */
+  font-size: 16px;
   font-family: inherit;
 }
 
-/* Prevent long words from overflowing */
+/* Prevent long words */
 .card, .stat-card, .floor-card, .room-card, td, th {
   word-break: break-word;
 }
