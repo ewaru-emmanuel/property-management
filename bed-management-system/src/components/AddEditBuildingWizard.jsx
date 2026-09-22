@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { useBuildingTree } from '../hooks/useBuildingTree';
 import '../styles/wizard.css';
 
 const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
   const isEditing = !!building;
 
   const [step, setStep] = useState(1);
-  const [loadingTree, setLoadingTree] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -14,45 +14,45 @@ const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
     floors: [],
   });
 
-  // ---------- Load existing tree when editing ----------
-  useEffect(() => {
-    if (!building) return;
+  // ---------- Shared cached tree ----------
+  const { data: tree, isLoading: loadingTree, error: treeError } = useBuildingTree(
+    building?.id
+  );
 
-    const load = async () => {
-      setLoadingTree(true);
-      try {
-        const tree = await api.get(`/api/buildings/${building.id}/tree`);
-        setFormData({
-          name: tree.name || '',
-          address: tree.address || '',
-          description: tree.description || '',
-          floors: (tree.floors || []).map((floor) => ({
-            id: floor.id,
-            name: floor.name,
-            rooms: (floor.rooms || []).map((room) => ({
-              id: room.id,
-              name: room.name,
-              beds: (room.beds || []).map((bed) => ({
-                id: bed.id,
-                name: bed.name,
-                decks: (bed.decks || []).map((deck) => ({
-                  id: deck.id,
-                  position: deck.position,
-                })),
-              })),
+  // Hydrate form when tree arrives
+  useEffect(() => {
+    if (!tree) return;
+
+    setFormData({
+      name: tree.name || '',
+      address: tree.address || '',
+      description: tree.description || '',
+      floors: (tree.floors || []).map((floor) => ({
+        id: floor.id,
+        name: floor.name,
+        rooms: (floor.rooms || []).map((room) => ({
+          id: room.id,
+          name: room.name,
+          beds: (room.beds || []).map((bed) => ({
+            id: bed.id,
+            name: bed.name,
+            decks: (bed.decks || []).map((deck) => ({
+              id: deck.id,
+              position: deck.position,
             })),
           })),
-        });
-      } catch (err) {
-        alert('Failed to load building structure: ' + err.message);
-        onClose();
-      } finally {
-        setLoadingTree(false);
-      }
-    };
+        })),
+      })),
+    });
+  }, [tree]);
 
-    load();
-  }, [building, onClose]);
+  // Handle fetch error
+  useEffect(() => {
+    if (treeError && building) {
+      alert('Failed to load building structure: ' + treeError.message);
+      onClose();
+    }
+  }, [treeError, building, onClose]);
 
   // ---------- Step navigation ----------
   const handleNext = () => {
@@ -190,10 +190,7 @@ const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
     try {
       let result;
       if (isEditing) {
-        result = await api.put(
-          `/api/buildings/${building.id}/sync`,
-          payload
-        );
+        result = await api.put(`/api/buildings/${building.id}/sync`, payload);
       } else {
         result = await api.post('/api/buildings', payload);
       }
@@ -228,7 +225,7 @@ const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
           </button>
         </div>
 
-        {loadingTree ? (
+        {isEditing && loadingTree ? (
           <p style={{ textAlign: 'center', padding: 40 }}>
             Loading structure...
           </p>
@@ -264,10 +261,7 @@ const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
                   <textarea
                     value={formData.description}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        description: e.target.value,
-                      })
+                      setFormData({ ...formData, description: e.target.value })
                     }
                     placeholder="Optional notes about this building"
                     rows="3"
@@ -474,13 +468,9 @@ const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
               </>
             )}
 
-            {/* Footer: Cancel · Next · Save */}
+            {/* Footer */}
             <div className="form-actions three-buttons">
-              <button
-                type="button"
-                className="cancel-btn"
-                onClick={onClose}
-              >
+              <button type="button" className="cancel-btn" onClick={onClose}>
                 Cancel
               </button>
               <button
@@ -489,13 +479,9 @@ const AddEditBuildingWizard = ({ building, onClose, onSaved }) => {
                 onClick={handleNext}
                 disabled={step === 4}
               >
-                Next
+                Next →
               </button>
-              <button
-                type="button"
-                className="submit-btn"
-                onClick={handleSave}
-              >
+              <button type="button" className="submit-btn" onClick={handleSave}>
                 {isEditing ? 'Save Changes' : 'Save'}
               </button>
             </div>

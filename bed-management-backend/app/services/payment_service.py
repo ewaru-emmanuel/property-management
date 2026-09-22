@@ -2,6 +2,10 @@ from app.database import supabase_admin
 
 
 def list_payments(user_id: str, building_id: str = None):
+    """
+    List payments with occupant + location context in ONE query.
+    """
+    # Get user's buildings
     bq = supabase_admin.table("buildings").select("id").eq("user_id", user_id)
     if building_id:
         bq = bq.eq("id", building_id)
@@ -10,57 +14,44 @@ def list_payments(user_id: str, building_id: str = None):
     if not building_ids:
         return []
 
-    # Get occupants in these buildings
-    occ = (
-        supabase_admin.table("occupants")
-        .select("id, full_name, building_id, deck_id")
-        .in_("building_id", building_ids)
-        .execute()
-    ).data
-    occ_map = {o["id"]: o for o in occ}
-
-    if not occ_map:
-        return []
-
-    pays = (
+    # One nested query: payment → occupant → deck → bed → room
+    res = (
         supabase_admin.table("payments")
-        .select("*")
-        .in_("occupant_id", list(occ_map.keys()))
+        .select("""
+            id, occupant_id, deck_id, amount_paid, balance,
+            payment_date, due_date, status, notes, created_at,
+            occupants!inner (
+                id, full_name, building_id,
+                decks (
+                    id, position,
+                    beds (
+                        id, name,
+                        rooms ( id, name )
+                    )
+                )
+            )
+        """)
+        .in_("occupants.building_id", building_ids)
         .order("payment_date", desc=True)
         .execute()
-    ).data
+    )
 
-    # Enrich with occupant name + room/bed info
-    for p in pays:
-        o = occ_map.get(p["occupant_id"])
-        p["occupant_name"] = o["full_name"] if o else "—"
+    # Flatten
+    result = []
+    for p in res.data:
+        occ = p.pop("occupants", None) or {}
+        deck = occ.get("decks", {}) if occ else {}
+        bed = deck.get("beds", {}) if deck else {}
+        room = bed.get("rooms", {}) if bed else {}
 
-        if o and o.get("deck_id"):
-            deck = (
-                supabase_admin.table("decks")
-                .select("position, bed_id")
-                .eq("id", o["deck_id"])
-                .execute()
-            ).data
-            if deck:
-                bed = (
-                    supabase_admin.table("beds")
-                    .select("name, room_id")
-                    .eq("id", deck[0]["bed_id"])
-                    .execute()
-                ).data
-                if bed:
-                    room = (
-                        supabase_admin.table("rooms")
-                        .select("name")
-                        .eq("id", bed[0]["room_id"])
-                        .execute()
-                    ).data
-                    p["room_name"] = room[0]["name"] if room else "—"
-                    p["bed_name"] = bed[0]["name"]
-                    p["deck_position"] = deck[0]["position"]
+        p["occupant_name"] = occ.get("full_name", "—")
+        p["room_name"] = room.get("name", "—")
+        p["bed_name"] = bed.get("name", "—")
+        p["deck_position"] = deck.get("position", "")
 
-    return pays
+        result.append(p)
+
+    return result
 
 
 def create_payment(user_id: str, payload: dict):
@@ -111,7 +102,6 @@ def update_payment(user_id: str, payment_id: str, payload: dict):
     if not p:
         raise Exception("Payment not found")
 
-    # Verify the occupant's building belongs to this user
     occ = (
         supabase_admin.table("occupants")
         .select("id, building_id")
@@ -131,7 +121,7 @@ def update_payment(user_id: str, payment_id: str, payload: dict):
     if not building:
         raise Exception("Not authorized")
 
-    # Build update — skip empty values so we don't wipe them
+    # Skip empty values
     update_data = {}
     for field in ["amount_paid", "balance", "due_date", "status", "notes"]:
         value = payload.get(field)
@@ -151,7 +141,6 @@ def update_payment(user_id: str, payment_id: str, payload: dict):
 
 
 def delete_payment(user_id: str, payment_id: str):
-    # Verify payment exists
     p = (
         supabase_admin.table("payments")
         .select("id, occupant_id")
@@ -161,7 +150,6 @@ def delete_payment(user_id: str, payment_id: str):
     if not p:
         raise Exception("Payment not found")
 
-    # Verify ownership via occupant → building → user
     occ = (
         supabase_admin.table("occupants")
         .select("id, building_id")

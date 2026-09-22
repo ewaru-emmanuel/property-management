@@ -137,76 +137,69 @@ def update_building(user_id: str, building_id: str, payload: dict):
 
 def get_building_tree(user_id: str, building_id: str):
     """
-    Return the full nested structure plus aggregated stats:
-    building → floors → rooms → beds → decks
+    Return the full nested tree + stats in ONE query using PostgREST nesting.
+    Total queries: 3 (tree + occupants count + payments)
     """
-    # Verify ownership
-    b = (
+    # Verify ownership + fetch entire nested tree in a single request
+    res = (
         supabase_admin.table("buildings")
-        .select("id, name, address, description")
+        .select("""
+            id, name, address, description,
+            floors (
+                id, name, floor_number,
+                rooms (
+                    id, name, room_type,
+                    beds (
+                        id, name,
+                        decks ( id, position, monthly_rate, status )
+                    )
+                )
+            )
+        """)
         .eq("id", building_id)
         .eq("user_id", user_id)
         .execute()
     )
-    if not b.data:
+
+    if not res.data:
         return None
 
-    building = b.data[0]
+    building = res.data[0]
 
-    # Floors
-    floors = (
-        supabase_admin.table("floors")
-        .select("id, name, floor_number")
-        .eq("building_id", building_id)
-        .order("floor_number")
-        .execute()
-    ).data
-
-    # Aggregates
+    # ---- Sort + aggregate ----
     total_rooms = 0
     total_beds = 0
     total_decks = 0
     occupied_decks = 0
 
+    floors = building.get("floors") or []
+    floors.sort(key=lambda f: f.get("floor_number") or 0)
+
+    deck_order = {"Upper": 0, "Middle": 1, "Lower": 2}
+
     for floor in floors:
-        rooms = (
-            supabase_admin.table("rooms")
-            .select("id, name, room_type")
-            .eq("floor_id", floor["id"])
-            .order("name")
-            .execute()
-        ).data
+        rooms = floor.get("rooms") or []
+        rooms.sort(key=lambda r: r.get("name") or "")
 
         floor_decks = 0
         floor_occupied = 0
         floor_beds = 0
 
         for room in rooms:
-            beds = (
-                supabase_admin.table("beds")
-                .select("id, name")
-                .eq("room_id", room["id"])
-                .order("name")
-                .execute()
-            ).data
+            beds = room.get("beds") or []
+            beds.sort(key=lambda b: b.get("name") or "")
 
             room_decks = 0
             room_occupied = 0
 
             for bed in beds:
-                decks = (
-                    supabase_admin.table("decks")
-                    .select("id, position, monthly_rate, status")
-                    .eq("bed_id", bed["id"])
-                    .execute()
-                ).data
-                order = {"Upper": 0, "Middle": 1, "Lower": 2}
-                decks.sort(key=lambda d: order.get(d["position"], 99))
+                decks = bed.get("decks") or []
+                decks.sort(key=lambda d: deck_order.get(d.get("position"), 99))
                 bed["decks"] = decks
 
                 room_decks += len(decks)
                 room_occupied += sum(
-                    1 for d in decks if d["status"] == "Occupied"
+                    1 for d in decks if d.get("status") == "Occupied"
                 )
 
             room["beds"] = beds
@@ -230,7 +223,7 @@ def get_building_tree(user_id: str, building_id: str):
 
     building["floors"] = floors
 
-    # Occupants count
+    # ---- Occupants count ----
     occupants = (
         supabase_admin.table("occupants")
         .select("id", count="exact")
@@ -240,7 +233,7 @@ def get_building_tree(user_id: str, building_id: str):
     )
     total_occupants = occupants.count or 0
 
-    # Financials
+    # ---- Financials ----
     occupant_ids = [
         o["id"]
         for o in supabase_admin.table("occupants")

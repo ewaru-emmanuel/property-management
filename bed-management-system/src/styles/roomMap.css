@@ -1,0 +1,350 @@
+/* =========================
+   ROOM MAP — 2.5D Isometric
+========================= */
+
+.room-map {
+  padding: 24px 20px;
+  background: linear-gradient(180deg, #fafcff 0%, #f1f5f9 100%);
+  text-align: center;
+}
+
+/* Header */
+.room-map-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px dashed #cbd5e1;
+}
+
+.room-map-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 2px;
+}
+
+.room-map-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.room-map-occupancy {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Beds grid */
+.iso-beds {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 16px 0 24px;
+}
+
+.iso-bed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.iso-bed-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: #fff;
+  padding: 4px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.iso-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Each deck */
+.iso-deck {
+  position: relative;
+  width: 160px;
+  height: 66px;
+  border-radius: 6px;
+  transform: perspective(500px) rotateX(8deg);
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.iso-deck:hover {
+  transform: perspective(500px) rotateX(8deg) translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.iso-deck.occupied {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.iso-deck.vacant {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  color: #475569;
+  border: 2px solid #22c55e;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+/* 3D top */
+.iso-deck-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  border-radius: 6px 6px 0 0;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+
+.iso-deck.occupied .iso-deck-top {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.iso-deck.vacant .iso-deck-top {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* 3D side */
+.iso-deck-side {
+  position: absolute;
+  right: -4px;
+  top: 6px;
+  bottom: 0;
+  width: 6px;
+  border-radius: 0 6px 6px 0;
+  background: rgba(0, 0, 0, 0.08);
+  transform: skewY(-8deg);
+  pointer-events: none;
+}
+
+.iso-deck.occupied .iso-deck-side {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Front content */
+.iso-deck-front {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px;
+}
+
+.iso-deck-position {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+
+.iso-deck-status {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.iso-deck-balance {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-top: 2px;
+}
+
+/* Empty */
+.room-map-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Footer stats */
+.room-map-footer {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  padding: 20px 0 12px;
+  border-top: 2px dashed #cbd5e1;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.map-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 60px;
+}
+
+.map-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.map-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 768px) {
+  .room-map {
+    padding: 20px 14px;
+  }
+
+  .iso-beds {
+    gap: 20px;
+  }
+
+  .iso-deck {
+    width: 140px;
+    height: 58px;
+  }
+
+  .iso-deck-position {
+    font-size: 10px;
+  }
+
+  .iso-deck-status {
+    font-size: 11px;
+  }
+
+  .room-map-title {
+    font-size: 17px;
+  }
+
+  .room-map-footer {
+    gap: 20px;
+  }
+
+  .map-stat-value {
+    font-size: 18px;
+  }
+
+  .map-stat-label {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .iso-beds {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .iso-deck {
+    width: 220px;
+    height: 60px;
+  }
+}
+
+
+/* =========================
+   DECK ACTIONS ROW (in detail sheet)
+========================= */
+.deck-actions-row {
+  display: flex;
+  gap: 10px;
+  padding: 12px 12px 4px;
+  margin-top: 4px;
+}
+
+.deck-action-btn {
+  flex: 1;
+  padding: 12px 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.deck-action-btn:active {
+  transform: scale(0.97);
+}
+
+.deck-action-btn.transfer {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.deck-action-btn.transfer:hover {
+  background: #dbeafe;
+}
+
+.deck-action-btn.checkout {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.deck-action-btn.checkout:hover {
+  background: #fca5a5;
+}
+
+.deck-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.deck-action-btn:disabled:active {
+  transform: none;
+}
+
+.deck-action-btn.add-occupant {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.deck-action-btn.add-occupant:hover {
+  background: #bbf7d0;
+}
+
+/* Responsive — stack on very small screens */
+@media (max-width: 400px) {
+  .deck-actions-row {
+    flex-direction: column;
+  }
+}

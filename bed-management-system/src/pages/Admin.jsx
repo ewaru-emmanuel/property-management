@@ -25,7 +25,6 @@ const Admin = () => {
     { id: 'users', label: 'Users' },
   ];
 
-  // ---------- Wizard handlers ----------
   const handleOpenAdd = () => {
     setEditingBuilding(null);
     setWizardOpen(true);
@@ -46,20 +45,19 @@ const Admin = () => {
     const cacheKey = ['buildings'];
     const previous = qc.getQueryData(cacheKey);
 
-    // Optimistic update
     if (wasEditing) {
       qc.setQueryData(cacheKey, (old = []) =>
-        old.map((b) => (b.id === editingBuilding.id ? result : b))
+        old.map((b) => (b.id === editingBuilding.id ? { ...b, ...result } : b))
       );
+      // Invalidate the cached tree so next open picks up changes
+      qc.invalidateQueries({ queryKey: ['building-tree', editingBuilding.id] });
     } else {
       qc.setQueryData(cacheKey, (old = []) => [result, ...old]);
     }
 
-    // Close wizard
     setWizardOpen(false);
     setEditingBuilding(null);
 
-    // Refresh from server in the background
     try {
       await refreshBuildings();
     } catch (err) {
@@ -68,7 +66,6 @@ const Admin = () => {
     }
   };
 
-  // ---------- Delete building ----------
   const handleDelete = async (id) => {
     if (
       !window.confirm('Delete this building? Everything inside will be removed.')
@@ -79,6 +76,7 @@ const Admin = () => {
     const previous = qc.getQueryData(cacheKey);
 
     qc.setQueryData(cacheKey, (old = []) => old.filter((b) => b.id !== id));
+    qc.removeQueries({ queryKey: ['building-tree', id] });
 
     try {
       await api.delete(`/api/buildings/${id}`);
@@ -90,9 +88,6 @@ const Admin = () => {
     setSelectedBuilding(null);
   };
 
-  // ============================================================
-  //  TAB CONTENT
-  // ============================================================
   const renderTabContent = () => {
     switch (activeTab) {
       case 'buildings':
@@ -127,16 +122,13 @@ const Admin = () => {
                       <tr
                         key={b.id}
                         className="building-row"
-                        style={b._optimistic ? { opacity: 0.6 } : undefined}
                         onClick={() => setSelectedBuilding(b)}
                       >
                         <td data-label="Name" className="cell-name">
                           <div className="occupant-avatar">
                             {(b.name || '?')[0].toUpperCase()}
                           </div>
-                          <span className="occupant-name-text">
-                            {b.name}
-                          </span>
+                          <span className="occupant-name-text">{b.name}</span>
                         </td>
                         <td data-label="Address">{b.address || '—'}</td>
                         <td data-label="Description">
@@ -185,9 +177,6 @@ const Admin = () => {
     }
   };
 
-  // ============================================================
-  //  RENDER
-  // ============================================================
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -211,7 +200,6 @@ const Admin = () => {
 
       <div className="admin-content">{renderTabContent()}</div>
 
-      {/* ---------- Rich Building Profile Sheet ---------- */}
       {selectedBuilding && (
         <BuildingProfileSheet
           building={selectedBuilding}
@@ -221,7 +209,6 @@ const Admin = () => {
         />
       )}
 
-      {/* ---------- Add / Edit Building Wizard ---------- */}
       {wizardOpen && (
         <AddEditBuildingWizard
           building={editingBuilding}
@@ -233,9 +220,6 @@ const Admin = () => {
   );
 };
 
-// ============================================================
-//  PLACEHOLDER SECTION
-// ============================================================
 const PlaceholderSection = ({ title }) => (
   <div className="placeholder-section">
     <div className="placeholder-icon">🚧</div>

@@ -1,27 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import React from 'react';
 import { useCurrency } from '../hooks/useCurrency';
+import { useBuildingTree } from '../hooks/useBuildingTree';
 import '../styles/profileSheet.css';
+import '../styles/occupant.css';
 
 const BuildingProfileSheet = ({ building, onClose, onEdit, onDelete }) => {
   const { format: formatMoney } = useCurrency();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: tree, isLoading: loading } = useBuildingTree(building.id);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const tree = await api.get(`/api/buildings/${building.id}/tree`);
-        setStats(tree.stats);
-      } catch {
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [building.id]);
-
+  const stats = tree?.stats;
   const initial = (building.name || '?')[0].toUpperCase();
 
   return (
@@ -95,7 +82,7 @@ const BuildingProfileSheet = ({ building, onClose, onEdit, onDelete }) => {
               </div>
             </div>
 
-            {/* Financials — uses user's currency from Settings */}
+            {/* Financials */}
             <div className="building-financials">
               <div className="finance-item">
                 <span className="finance-label">💰 Total Paid</span>

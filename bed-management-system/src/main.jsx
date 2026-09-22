@@ -7,11 +7,11 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,        // data considered fresh for 5 min
-      gcTime: 1000 * 60 * 30,          // cache kept for 30 min after unmount
-      refetchOnWindowFocus: false,     // don't refetch on tab switch
-      refetchOnMount: false,           // don't refetch on navigation back
-      refetchOnReconnect: false,       // don't refetch on network reconnect
+      staleTime: 1000 * 60 * 5,      // 5 minutes fresh
+      gcTime: 1000 * 60 * 30,        // 30 minutes cached
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
       retry: 1,
     },
   },
