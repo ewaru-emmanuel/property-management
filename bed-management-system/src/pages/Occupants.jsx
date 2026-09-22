@@ -5,6 +5,8 @@ import { useBuildings } from '../context/BuildingsContext';
 import AddOccupantModal from '../components/AddOccupantModal';
 import '../styles/occupant.css';
 
+const todayISO = () => new Date().toISOString().split('T')[0];
+
 const getInitials = (name = '') => {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0) return '?';
@@ -31,6 +33,7 @@ const Occupants = () => {
     status: 'Active',
   });
 
+  // ---------- Queries ----------
   const { data: occupants = [], isLoading, error } = useQuery({
     queryKey: ['occupants', selectedBuilding?.id],
     queryFn: () => api.get(`/api/occupants?building_id=${selectedBuilding.id}`),
@@ -44,6 +47,7 @@ const Occupants = () => {
     enabled: !!selectedBuilding,
   });
 
+  // ---------- Mutations ----------
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }) => api.put(`/api/occupants/${id}`, payload),
     onSuccess: () => {
@@ -79,30 +83,35 @@ const Occupants = () => {
     },
   });
 
+  // ---------- Handlers ----------
   const handleOpenEdit = (occupant) => {
-  setEditingOccupant(occupant);
+    setEditingOccupant(occupant);
 
-  // Ensure date is YYYY-MM-DD
-  let checkInISO = occupant.check_in_date || '';
-  if (checkInISO && !checkInISO.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    // If not ISO, try to parse as DD/MM/YYYY
-    const parts = checkInISO.split('/');
-    if (parts.length === 3) {
-      checkInISO = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    // Normalize the stored date to YYYY-MM-DD
+    let checkInISO = occupant.check_in_date || '';
+    if (checkInISO && !/^\d{4}-\d{2}-\d{2}$/.test(checkInISO)) {
+      // Try DD/MM/YYYY
+      const parts = checkInISO.split('/');
+      if (parts.length === 3) {
+        const [d, m, y] = parts;
+        checkInISO = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      } else {
+        checkInISO = todayISO();
+      }
     }
-  }
 
-  setEditForm({
-    full_name: occupant.full_name || '',
-    phone: occupant.phone || '',
-    email: occupant.email || '',
-    emergency_contact: occupant.emergency_contact || '',
-    deck_id: occupant.deck_id || '',
-    check_in_date: checkInISO,
-    status: occupant.status || 'Active',
-  });
-  setSelectedOccupant(null);
-};
+    setEditForm({
+      full_name: occupant.full_name || '',
+      phone: occupant.phone || '',
+      email: occupant.email || '',
+      emergency_contact: occupant.emergency_contact || '',
+      deck_id: occupant.deck_id || '',
+      check_in_date: checkInISO || todayISO(),
+      status: occupant.status || 'Active',
+    });
+
+    setSelectedOccupant(null);
+  };
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -270,7 +279,7 @@ const Occupants = () => {
         </div>
       )}
 
-      {/* Bottom sheet */}
+      {/* ---------- Bottom Sheet ---------- */}
       {selectedOccupant && (
         <div
           className="occupant-sheet-overlay"
@@ -350,17 +359,15 @@ const Occupants = () => {
         </div>
       )}
 
-      {/* Add Occupant modal */}
+      {/* ---------- Add Occupant Modal ---------- */}
       {showAddModal && (
-  <AddOccupantModal
-    onClose={() => setShowAddModal(false)}
-    onSuccess={() => setShowAddModal(false)}
-  />
-)}
+        <AddOccupantModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => setShowAddModal(false)}
+        />
+      )}
 
-
-
-      {/* Edit Occupant modal */}
+      {/* ---------- Edit Occupant Modal ---------- */}
       {editingOccupant && (
         <div className="modal-overlay" onClick={() => setEditingOccupant(null)}>
           <div
@@ -379,14 +386,15 @@ const Occupants = () => {
 
             <form onSubmit={handleEditSubmit}>
               <div className="form-group">
-          <label>Check-in Date</label>
-          <input
-            type="date"
-            name="check_in_date"
-            value={editForm.check_in_date}
-            onChange={handleEditChange}
-          />
-        </div>
+                <label>Full Name *</label>
+                <input
+                  type="text"
+                  name="full_name"
+                  value={editForm.full_name}
+                  onChange={handleEditChange}
+                  required
+                />
+              </div>
 
               <div className="form-row">
                 <div className="form-group">
@@ -439,7 +447,7 @@ const Occupants = () => {
                 <div className="form-group">
                   <label>Check-in Date</label>
                   <input
-                    type="text"
+                    type="date"
                     name="check_in_date"
                     value={editForm.check_in_date}
                     onChange={handleEditChange}

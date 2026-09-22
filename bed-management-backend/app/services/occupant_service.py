@@ -1,10 +1,27 @@
+from datetime import datetime
 from app.database import supabase_admin
 
 
+def _safe_date(value):
+    """
+    Ensure a date is YYYY-MM-DD. Falls back to today if invalid.
+    Accepts ISO (YYYY-MM-DD) or DD/MM/YYYY.
+    """
+    if not value:
+        return datetime.now().strftime("%Y-%m-%d")
+    try:
+        dt = datetime.strptime(value, "%Y-%m-%d")
+        return dt.strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        try:
+            dt = datetime.strptime(value, "%d/%m/%Y")
+            return dt.strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            return datetime.now().strftime("%Y-%m-%d")
+
+
 def list_occupants(user_id: str, building_id: str = None):
-    """
-    List occupants with their full location context in ONE query.
-    """
+    """List occupants with their full location context in ONE query."""
     bq = supabase_admin.table("buildings").select("id").eq("user_id", user_id)
     if building_id:
         bq = bq.eq("id", building_id)
@@ -52,6 +69,7 @@ def list_occupants(user_id: str, building_id: str = None):
 
 
 def create_occupant(user_id: str, payload: dict):
+    # Verify building belongs to user
     b = (
         supabase_admin.table("buildings")
         .select("id")
@@ -62,47 +80,40 @@ def create_occupant(user_id: str, payload: dict):
     if not b.data:
         raise Exception("Building not found for this user")
 
+    # Normalize empty values → None
     deck_id = payload.get("deck_id") or None
     phone = payload.get("phone") or None
     email = payload.get("email") or None
     emergency_contact = payload.get("emergency_contact") or None
-    check_in_date = payload.get("check_in_date") or None
     full_name = (payload.get("full_name") or "").strip()
 
     if not full_name:
         raise Exception("Full name is required")
 
-    # ⭐ TEMP DEBUG — log the exact payload
-    print(f"DEBUG create_occupant payload: {payload}")
-    print(f"DEBUG normalized: deck_id={deck_id}, full_name={full_name}, check_in_date={check_in_date}")
-
-    try:
-        res = (
-            supabase_admin.table("occupants")
-            .insert({
-                "building_id": payload["building_id"],
-                "deck_id": deck_id,
-                "full_name": full_name,
-                "phone": phone,
-                "email": email,
-                "emergency_contact": emergency_contact,
-                "check_in_date": check_in_date,
-                "status": "Active",
-            })
-            .execute()
-        )
-    except Exception as e:
-        # ⭐ Surface the exact Supabase error
-        raise Exception(f"Supabase insert failed: {str(e)}")
-
+    res = (
+        supabase_admin.table("occupants")
+        .insert({
+            "building_id": payload["building_id"],
+            "deck_id": deck_id,
+            "full_name": full_name,
+            "phone": phone,
+            "email": email,
+            "emergency_contact": emergency_contact,
+            "check_in_date": _safe_date(payload.get("check_in_date")),
+            "status": "Active",
+        })
+        .execute()
+    )
     occupant = res.data[0]
 
+    # Mark deck as Occupied
     if deck_id:
         supabase_admin.table("decks").update(
             {"status": "Occupied"}
         ).eq("id", deck_id).execute()
 
     return occupant
+
 
 def update_occupant(user_id: str, occupant_id: str, payload: dict):
     # Verify occupant exists and belongs to user's building
@@ -128,21 +139,18 @@ def update_occupant(user_id: str, occupant_id: str, payload: dict):
     old_deck_id = o[0].get("deck_id")
     new_deck_id = payload.get("deck_id")
 
-    # Build the update dict — skip empty strings
+    # Build update dict — skip empty strings
     update_data = {}
-    for field in [
-        "full_name",
-        "phone",
-        "email",
-        "emergency_contact",
-        "check_in_date",
-        "status",
-    ]:
+    for field in ["full_name", "phone", "email", "emergency_contact", "status"]:
         value = payload.get(field)
         if value is not None and value != "":
             update_data[field] = value
 
-    # Handle deck swap if a new deck is provided and different
+    # Handle date safely
+    if payload.get("check_in_date"):
+        update_data["check_in_date"] = _safe_date(payload.get("check_in_date"))
+
+    # Handle deck swap
     if new_deck_id and new_deck_id != old_deck_id:
         update_data["deck_id"] = new_deck_id
 
@@ -198,9 +206,7 @@ def delete_occupant(user_id: str, occupant_id: str):
 
 
 def list_vacant_decks(user_id: str, building_id: str):
-    """
-    Return all vacant decks in a building with full location context in ONE query.
-    """
+    """Return all vacant decks in a building with full location context in ONE query."""
     b = (
         supabase_admin.table("buildings")
         .select("id")
