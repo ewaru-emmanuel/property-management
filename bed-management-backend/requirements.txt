@@ -3,4 +3,5 @@ uvicorn[standard]
 python-dotenv
 supabase
 pyjwt
-email-validator 
+email-validator
+requests
