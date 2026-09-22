@@ -2,11 +2,6 @@ from app.database import supabase_admin
 
 
 def list_occupants(user_id: str, building_id: str = None):
-    """
-    List occupants with their full location context in ONE query.
-    Uses PostgREST nested selects.
-    """
-    # Restrict to buildings owned by this user
     bq = supabase_admin.table("buildings").select("id").eq("user_id", user_id)
     if building_id:
         bq = bq.eq("id", building_id)
@@ -15,7 +10,6 @@ def list_occupants(user_id: str, building_id: str = None):
     if not building_ids:
         return []
 
-    # One nested query: occupant → deck → bed → room → floor
     res = (
         supabase_admin.table("occupants")
         .select("""
@@ -37,13 +31,12 @@ def list_occupants(user_id: str, building_id: str = None):
         .execute()
     )
 
-    # Flatten the nested structure into the shape the frontend expects
     result = []
     for o in res.data:
-        deck = o.pop("decks", None) or {}
-        bed = deck.get("beds", {}) if deck else {}
-        room = bed.get("rooms", {}) if bed else {}
-        floor = room.get("floors", {}) if room else {}
+        deck = o.pop("decks") or {}
+        bed = deck.get("beds") or {}
+        room = bed.get("rooms") or {}
+        floor = room.get("floors") or {}
 
         o["floor_name"] = floor.get("name", "")
         o["room_name"] = room.get("name", "")
@@ -53,7 +46,6 @@ def list_occupants(user_id: str, building_id: str = None):
         result.append(o)
 
     return result
-
 
 def create_occupant(user_id: str, payload: dict):
     # Verify building belongs to user
