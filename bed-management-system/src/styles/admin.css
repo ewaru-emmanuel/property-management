@@ -417,7 +417,7 @@
 /* =========================
    RESPONSIVE — SMALL PHONES (Honor 10, iPhone SE)
 ========================= */
-@media (max-width: 400px) {
+@media (max-width: 100px) {
   .admin-content {
     padding: 14px 10px;
   }
