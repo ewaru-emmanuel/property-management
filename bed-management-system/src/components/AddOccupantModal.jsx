@@ -4,6 +4,8 @@ import { api } from '../lib/api';
 import { useBuildings } from '../context/BuildingsContext';
 import '../styles/occupant.css';
 
+const todayISO = () => new Date().toISOString().split('T')[0];   // YYYY-MM-DD
+
 const AddOccupantModal = ({
   preselectedDeckId = null,
   onClose,
@@ -18,10 +20,9 @@ const AddOccupantModal = ({
     email: '',
     emergency_contact: '',
     deck_id: preselectedDeckId || '',
-    check_in_date: new Date().toLocaleDateString(),
+    check_in_date: todayISO(),
   });
 
-  // Same query as Occupants.jsx
   const { data: vacantDecks = [] } = useQuery({
     queryKey: ['decks', selectedBuilding?.id],
     queryFn: () =>
@@ -107,7 +108,7 @@ const AddOccupantModal = ({
       phone: formData.phone,
       email: formData.email,
       emergency_contact: formData.emergency_contact,
-      check_in_date: formData.check_in_date,
+      check_in_date: formData.check_in_date,   // already YYYY-MM-DD
     };
 
     createMutation.mutate(payload, {
@@ -191,10 +192,11 @@ const AddOccupantModal = ({
           <div className="form-group">
             <label>Check-in Date</label>
             <input
-              type="text"
+              type="date"                          // ← forces ISO format
               name="check_in_date"
               value={formData.check_in_date}
               onChange={handleInputChange}
+              required
             />
           </div>
 

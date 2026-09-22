@@ -80,18 +80,29 @@ const Occupants = () => {
   });
 
   const handleOpenEdit = (occupant) => {
-    setEditingOccupant(occupant);
-    setEditForm({
-      full_name: occupant.full_name || '',
-      phone: occupant.phone || '',
-      email: occupant.email || '',
-      emergency_contact: occupant.emergency_contact || '',
-      deck_id: occupant.deck_id || '',
-      check_in_date: occupant.check_in_date || '',
-      status: occupant.status || 'Active',
-    });
-    setSelectedOccupant(null);
-  };
+  setEditingOccupant(occupant);
+
+  // Ensure date is YYYY-MM-DD
+  let checkInISO = occupant.check_in_date || '';
+  if (checkInISO && !checkInISO.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // If not ISO, try to parse as DD/MM/YYYY
+    const parts = checkInISO.split('/');
+    if (parts.length === 3) {
+      checkInISO = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+
+  setEditForm({
+    full_name: occupant.full_name || '',
+    phone: occupant.phone || '',
+    email: occupant.email || '',
+    emergency_contact: occupant.emergency_contact || '',
+    deck_id: occupant.deck_id || '',
+    check_in_date: checkInISO,
+    status: occupant.status || 'Active',
+  });
+  setSelectedOccupant(null);
+};
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -368,15 +379,14 @@ const Occupants = () => {
 
             <form onSubmit={handleEditSubmit}>
               <div className="form-group">
-                <label>Full Name *</label>
-                <input
-                  type="text"
-                  name="full_name"
-                  value={editForm.full_name}
-                  onChange={handleEditChange}
-                  required
-                />
-              </div>
+          <label>Check-in Date</label>
+          <input
+            type="date"
+            name="check_in_date"
+            value={editForm.check_in_date}
+            onChange={handleEditChange}
+          />
+        </div>
 
               <div className="form-row">
                 <div className="form-group">
